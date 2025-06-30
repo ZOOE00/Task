@@ -1,48 +1,46 @@
 "use client";
 import React, { useState } from "react";
-import AppBar from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
-import IconButton from "@mui/material/IconButton";
+import {
+  AppBar,
+  Toolbar,
+  IconButton,
+  Typography,
+  Container,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  Box,
+} from "@mui/material";
 import AccountCircle from "@mui/icons-material/AccountCircle";
-import Typography from "@mui/material/Typography";
-import Container from "@mui/material/Container";
-import Button from "@mui/material/Button";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
-import TextField from "@mui/material/TextField";
-import Box from "@mui/material/Box";
 
 export default function AdminPage() {
-  // Users state
   const [users, setUsers] = useState([
     { id: 1, name: "Alice", email: "alice@example.com", role: "admin" },
     { id: 2, name: "Bob", email: "bob@example.com", role: "user" },
   ]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newUser, setNewUser] = useState({ name: "", email: "", role: "user" });
+  const [newUser, setNewUser] = useState({ name: "", email: "", role: "", position: "", rank: "" });
 
-  // Tasks state
   const [tasks, setTasks] = useState([{ id: 1, title: "Review Budget", userId: 1 }]);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [newTask, setNewTask] = useState({ title: "", userId: "" });
 
-  // Current tab state: 'users' or 'tasks'
   const [currentTab, setCurrentTab] = useState<"users" | "tasks">("users");
 
-  // Handlers for users
   const handleOpen = () => setDialogOpen(true);
   const handleClose = () => {
     setDialogOpen(false);
-    setNewUser({ name: "", email: "", role: "user" });
+    setNewUser({ name: "", email: "", role: "user", position: "", rank: "" });
   };
   const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setNewUser((prev) => ({ ...prev, [field]: e.target.value }));
@@ -52,7 +50,6 @@ export default function AdminPage() {
     handleClose();
   };
 
-  // Handlers for tasks
   const handleTaskOpen = () => setTaskDialogOpen(true);
   const handleTaskClose = () => {
     setTaskDialogOpen(false);
@@ -68,9 +65,9 @@ export default function AdminPage() {
 
   return (
     <>
-      <AppBar position="static">
+      <AppBar position="static" sx={{ bgcolor: "#1A237E" }}>
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" sx={{ flexGrow: 1, color: "white" }}>
             Admin Dashboard
           </Typography>
           <IconButton color="inherit">
@@ -80,45 +77,47 @@ export default function AdminPage() {
       </AppBar>
 
       <Container sx={{ mt: 4 }}>
-        {/* Menu buttons */}
         <Box sx={{ mb: 3, display: "flex", gap: 2 }}>
           <Button
             variant={currentTab === "users" ? "contained" : "outlined"}
             onClick={() => setCurrentTab("users")}
+            color="primary"
           >
-            Users
+            Хэрэглэгчийн жагсаалт
           </Button>
           <Button
             variant={currentTab === "tasks" ? "contained" : "outlined"}
             onClick={() => setCurrentTab("tasks")}
+            color="secondary"
           >
-            Tasks
+            Даалгаврууд
           </Button>
         </Box>
 
-        {/* Conditionally render Users or Tasks content */}
         {currentTab === "users" && (
           <>
             <Button variant="contained" onClick={handleOpen} sx={{ mb: 2 }}>
-              Add User
+              Хэрэглэгч бүртгэх
             </Button>
 
-            <TableContainer component={Paper}>
+            <TableContainer component={Paper} elevation={3}>
               <Table>
-                <TableHead>
+                <TableHead sx={{ backgroundColor: "#E8EAF6" }}>
                   <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>Role</TableCell>
+                    <TableCell>Д/д</TableCell>
+                    <TableCell>Албан тушаал</TableCell>
+                    <TableCell>Цол</TableCell>
+                    <TableCell>Овог, Нэр</TableCell>
+                    <TableCell>Хэрэглэгчийн эрх</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {users.map((u) => (
-                    <TableRow key={u.id}>
+                    <TableRow key={u.id} hover>
                       <TableCell>{u.id}</TableCell>
+                      <TableCell>{u.position}</TableCell>
+                      <TableCell>{u.rank}</TableCell>
                       <TableCell>{u.name}</TableCell>
-                      <TableCell>{u.email}</TableCell>
                       <TableCell>{u.role}</TableCell>
                     </TableRow>
                   ))}
@@ -126,18 +125,18 @@ export default function AdminPage() {
               </Table>
             </TableContainer>
 
-            {/* Add User Dialog */}
-            <Dialog open={dialogOpen} onClose={handleClose}>
-              <DialogTitle>Add New User</DialogTitle>
-              <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, width: 360 }}>
-                <TextField label="Name" value={newUser.name} onChange={handleChange("name")} fullWidth />
-                <TextField label="Email" type="email" value={newUser.email} onChange={handleChange("email")} fullWidth />
-                <TextField label="Role" value={newUser.role} onChange={handleChange("role")} fullWidth />
+            <Dialog open={dialogOpen} onClose={handleClose} fullWidth maxWidth="sm">
+              <DialogTitle>Хэрэглэгч бүртгэх</DialogTitle>
+              <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <TextField label="Албан тушаал" value={newUser.position} onChange={handleChange("position")} fullWidth />
+                <TextField label="Цол" value={newUser.rank} onChange={handleChange("rank")} fullWidth />
+                <TextField label="Овог, нэр" value={newUser.name} onChange={handleChange("name")} fullWidth />
+                <TextField label="Хэрэглэгчийн эрх" value={newUser.role} onChange={handleChange("role")} fullWidth />
               </DialogContent>
               <DialogActions>
-                <Button onClick={handleClose}>Cancel</Button>
-                <Button variant="contained" onClick={handleAdd}>
-                  Save
+                <Button onClick={handleClose}>Болих</Button>
+                <Button variant="contained" onClick={handleAdd} color="primary">
+                  Хадгалах
                 </Button>
               </DialogActions>
             </Dialog>
@@ -147,26 +146,26 @@ export default function AdminPage() {
         {currentTab === "tasks" && (
           <>
             <Button variant="contained" onClick={handleTaskOpen} sx={{ mb: 2 }}>
-              Assign Task
+              Үүрэг өгөх
             </Button>
 
-            <TableContainer component={Paper}>
+            <TableContainer component={Paper} elevation={3}>
               <Table>
-                <TableHead>
+                <TableHead sx={{ backgroundColor: "#FFF8E1" }}>
                   <TableRow>
                     <TableCell>ID</TableCell>
-                    <TableCell>Title</TableCell>
-                    <TableCell>Assigned To</TableCell>
+                    <TableCell>Гарчиг</TableCell>
+                    <TableCell>Хариуцагч</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {tasks.map((task) => {
                     const user = users.find((u) => u.id === task.userId);
                     return (
-                      <TableRow key={task.id}>
+                      <TableRow key={task.id} hover>
                         <TableCell>{task.id}</TableCell>
                         <TableCell>{task.title}</TableCell>
-                        <TableCell>{user ? user.name : "Unknown"}</TableCell>
+                        <TableCell>{user ? user.name : "Тодорхойгүй"}</TableCell>
                       </TableRow>
                     );
                   })}
@@ -174,25 +173,24 @@ export default function AdminPage() {
               </Table>
             </TableContainer>
 
-            {/* Assign Task Dialog */}
-            <Dialog open={taskDialogOpen} onClose={handleTaskClose}>
-              <DialogTitle>Assign Task</DialogTitle>
-              <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, width: 360 }}>
+            <Dialog open={taskDialogOpen} onClose={handleTaskClose} fullWidth maxWidth="sm">
+              <DialogTitle>Үүрэг өгөх</DialogTitle>
+              <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <TextField
-                  label="Task Title"
+                  label="Үүрэг"
                   value={newTask.title}
                   onChange={handleTaskChange("title")}
                   fullWidth
                 />
                 <TextField
-                  label="Assign To (User)"
+                  label="Хариуцагч"
                   select
                   SelectProps={{ native: true }}
                   value={newTask.userId}
                   onChange={handleTaskChange("userId")}
                   fullWidth
                 >
-                  <option value="">Select user</option>
+                  <option value="">Хэрэглэгч сонгох</option>
                   {users.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.name}
@@ -201,9 +199,9 @@ export default function AdminPage() {
                 </TextField>
               </DialogContent>
               <DialogActions>
-                <Button onClick={handleTaskClose}>Cancel</Button>
-                <Button variant="contained" onClick={handleTaskAdd}>
-                  Assign
+                <Button onClick={handleTaskClose}>Цуцлах</Button>
+                <Button variant="contained" onClick={handleTaskAdd} color="primary">
+                  Оноох
                 </Button>
               </DialogActions>
             </Dialog>
