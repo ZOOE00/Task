@@ -68,7 +68,7 @@ export default function AdminPage() {
   // Tabs
   const [currentTab, setCurrentTab] = useState<"users" | "tasks">("users");
 
-  // User Management
+  // Users
   const [users, setUsers] = useState([
     { id: 1, name: "Alice", email: "alice@example.com", role: "admin", position: "Ахлагч", rank: "Дэслэгч" },
     { id: 2, name: "Bob", email: "bob@example.com", role: "user", position: "Гишүүн", rank: "Ахлагч" },
@@ -89,21 +89,32 @@ export default function AdminPage() {
     handleCloseUserDialog();
   };
 
-  // Task Management
-  const [tasks, setTasks] = useState([{ id: 1, title: "Review Budget", userId: 1 }]);
+  // Tasks
+  const [tasks, setTasks] = useState([
+    { id: 1, title: "Review Budget", userId: 1, startDate: "2025-07-01", endDate: "2025-07-05" },
+  ]);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
-  const [newTask, setNewTask] = useState({ title: "", userId: "" });
+  const [newTask, setNewTask] = useState({ title: "", userId: "", startDate: "", endDate: "" });
 
   const handleOpenTaskDialog = () => setTaskDialogOpen(true);
   const handleCloseTaskDialog = () => {
     setTaskDialogOpen(false);
-    setNewTask({ title: "", userId: "" });
+    setNewTask({ title: "", userId: "", startDate: "", endDate: "" });
   };
   const handleTaskChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setNewTask((prev) => ({ ...prev, [field]: e.target.value }));
   const handleAddTask = () => {
     const nextId = tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1;
-    setTasks((prev) => [...prev, { id: nextId, ...newTask, userId: Number(newTask.userId) }]);
+    setTasks((prev) => [
+      ...prev,
+      {
+        id: nextId,
+        title: newTask.title,
+        userId: Number(newTask.userId),
+        startDate: newTask.startDate,
+        endDate: newTask.endDate,
+      },
+    ]);
     handleCloseTaskDialog();
   };
 
@@ -117,13 +128,7 @@ export default function AdminPage() {
           <IconButton color="inherit" onClick={handleMenuOpen}>
             <AccountCircle />
           </IconButton>
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-            transformOrigin={{ vertical: "top", horizontal: "right" }}
-          >
+          <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
             <MenuItem onClick={handleOpenPasswordDialog}>Нууц үг солих</MenuItem>
             <MenuItem onClick={handleLogout}>Гарах</MenuItem>
           </Menu>
@@ -153,9 +158,9 @@ export default function AdminPage() {
             <Button variant="contained" onClick={handleOpenUserDialog} sx={{ mb: 2 }}>
               Хэрэглэгч нэмэх
             </Button>
-            <TableContainer component={Paper} elevation={3}>
+            <TableContainer component={Paper}>
               <Table>
-                <TableHead sx={{ backgroundColor: "#E8EAF6" }}>
+                <TableHead>
                   <TableRow>
                     <TableCell>Д/д</TableCell>
                     <TableCell>Албан тушаал</TableCell>
@@ -167,7 +172,7 @@ export default function AdminPage() {
                 </TableHead>
                 <TableBody>
                   {users.map((u) => (
-                    <TableRow key={u.id} hover>
+                    <TableRow key={u.id}>
                       <TableCell>{u.id}</TableCell>
                       <TableCell>{u.position}</TableCell>
                       <TableCell>{u.rank}</TableCell>
@@ -191,9 +196,7 @@ export default function AdminPage() {
               </DialogContent>
               <DialogActions>
                 <Button onClick={handleCloseUserDialog}>Болих</Button>
-                <Button variant="contained" onClick={handleAddUser} color="primary">
-                  Хадгалах
-                </Button>
+                <Button variant="contained" onClick={handleAddUser}>Хадгалах</Button>
               </DialogActions>
             </Dialog>
           </>
@@ -204,23 +207,27 @@ export default function AdminPage() {
             <Button variant="contained" onClick={handleOpenTaskDialog} sx={{ mb: 2 }}>
               Үүрэг оноох
             </Button>
-            <TableContainer component={Paper} elevation={3}>
+            <TableContainer component={Paper}>
               <Table>
-                <TableHead sx={{ backgroundColor: "#FFF8E1" }}>
+                <TableHead>
                   <TableRow>
                     <TableCell>Д/д</TableCell>
                     <TableCell>Гарчиг</TableCell>
                     <TableCell>Хариуцагч</TableCell>
+                    <TableCell>Эхлэх</TableCell>
+                    <TableCell>Дуусах</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {tasks.map((task) => {
                     const user = users.find((u) => u.id === task.userId);
                     return (
-                      <TableRow key={task.id} hover>
+                      <TableRow key={task.id}>
                         <TableCell>{task.id}</TableCell>
                         <TableCell>{task.title}</TableCell>
                         <TableCell>{user ? user.name : "Тодорхойгүй"}</TableCell>
+                        <TableCell>{task.startDate}</TableCell>
+                        <TableCell>{task.endDate}</TableCell>
                       </TableRow>
                     );
                   })}
@@ -252,54 +259,44 @@ export default function AdminPage() {
                     </option>
                   ))}
                 </TextField>
+                <TextField
+                  label="Эхлэх огноо"
+                  type="date"
+                  value={newTask.startDate}
+                  onChange={handleTaskChange("startDate")}
+                  InputLabelProps={{ shrink: true }}
+                  fullWidth
+                />
+                <TextField
+                  label="Дуусах огноо"
+                  type="date"
+                  value={newTask.endDate}
+                  onChange={handleTaskChange("endDate")}
+                  InputLabelProps={{ shrink: true }}
+                  fullWidth
+                />
               </DialogContent>
               <DialogActions>
                 <Button onClick={handleCloseTaskDialog}>Цуцлах</Button>
-                <Button variant="contained" onClick={handleAddTask}>
-                  Оноох
-                </Button>
+                <Button variant="contained" onClick={handleAddTask}>Оноох</Button>
               </DialogActions>
             </Dialog>
           </>
         )}
       </Container>
 
-      {/* Change Password Dialog */}
+      {/* Password Dialog */}
       <Dialog open={passwordDialogOpen} onClose={handleClosePasswordDialog}>
         <DialogTitle>Нууц үг солих</DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <TextField
-            label="Одоогийн нууц үг"
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="Шинэ нууц үг"
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="Шинэ нууц үг давтах"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            fullWidth
-          />
-          {passwordError && (
-            <Typography color="error" variant="body2">
-              {passwordError}
-            </Typography>
-          )}
+          <TextField label="Одоогийн нууц үг" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} fullWidth />
+          <TextField label="Шинэ нууц үг" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} fullWidth />
+          <TextField label="Шинэ нууц үг давтах" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} fullWidth />
+          {passwordError && <Typography color="error">{passwordError}</Typography>}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClosePasswordDialog}>Болих</Button>
-          <Button variant="contained" onClick={handleChangePassword}>
-            Хадгалах
-          </Button>
+          <Button variant="contained" onClick={handleChangePassword}>Хадгалах</Button>
         </DialogActions>
       </Dialog>
     </>

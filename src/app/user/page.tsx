@@ -1,38 +1,29 @@
 "use client";
 import React, { useState } from "react";
-import AppBar from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
-import IconButton from "@mui/material/IconButton";
+import {
+  AppBar, Toolbar, IconButton, Typography, Container,
+  Card, CardContent, CardActions, Button, Dialog, DialogTitle,
+  DialogContent, DialogActions, TextField, Menu, MenuItem, Box, Paper
+} from "@mui/material";
 import AccountCircle from "@mui/icons-material/AccountCircle";
-import Typography from "@mui/material/Typography";
-import Container from "@mui/material/Container";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import CardActions from "@mui/material/CardActions";
-import Button from "@mui/material/Button";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import TextField from "@mui/material/TextField";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
 import { useRouter } from "next/navigation";
 
 export default function UserPage() {
-  const user = { id: 2, name: "Bob", email: "bob@example.com", role: "user" };
-
   const router = useRouter();
 
-  // Menu state
+  const user = { id: 2, name: "Bob", email: "bob@example.com", role: "user" };
+
+  const tasks = [
+    { id: 1, title: "Report Writing", userId: 2, startDate: "2025-06-25", endDate: "2025-06-30" },
+    { id: 2, title: "Security Check", userId: 1, startDate: "2025-06-26", endDate: "2025-06-28" },
+    { id: 3, title: "System Audit", userId: 2, startDate: "2025-06-27", endDate: "2025-07-01" },
+  ];
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
-  // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -62,14 +53,31 @@ export default function UserPage() {
       setError("Passwords do not match.");
       return;
     }
-
     alert("Password changed!");
     handleCloseDialog();
   };
 
   const handleLogout = () => {
     handleMenuClose();
-    router.push("/"); // Go back to login or homepage
+    router.push("/");
+  };
+
+  // Task submission
+  const [submissionDialogOpen, setSubmissionDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [submissionText, setSubmissionText] = useState("");
+  const [submissions, setSubmissions] = useState<{ [taskId: number]: string }>({});
+
+  const handleOpenSubmission = (task: any) => {
+    setSelectedTask(task);
+    setSubmissionText(submissions[task.id] || "");
+    setSubmissionDialogOpen(true);
+  };
+
+  const handleSubmitTask = () => {
+    setSubmissions((prev) => ({ ...prev, [selectedTask.id]: submissionText }));
+    setSubmissionDialogOpen(false);
+    alert("Submitted!");
   };
 
   return (
@@ -96,21 +104,22 @@ export default function UserPage() {
       </AppBar>
 
       <Container sx={{ mt: 4 }}>
-        <Card sx={{ maxWidth: 400, mx: "auto" }}>
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              {user.name}
+        
+        {/* Task List */}
+        <Typography variant="h6" gutterBottom>Assigned Tasks</Typography>
+        {tasks.filter(t => t.userId === user.id).map(task => (
+          <Paper key={task.id} sx={{ mb: 2, p: 2 }}>
+            <Typography variant="subtitle1">{task.title}</Typography>
+            <Typography variant="body2">Start: {task.startDate}</Typography>
+            <Typography variant="body2">End: {task.endDate}</Typography>
+            <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+              Submission: {submissions[task.id] || "Not submitted"}
             </Typography>
-            <Typography variant="body2">Email: {user.email}</Typography>
-            <Typography variant="body2">Role: {user.role}</Typography>
-          </CardContent>
-          <CardActions>
-            <Button size="small">Edit Profile</Button>
-            <Button size="small" onClick={handleLogout}>
-              Logout
+            <Button sx={{ mt: 1 }} variant="outlined" onClick={() => handleOpenSubmission(task)}>
+              {submissions[task.id] ? "Edit Submission" : "Submit Task"}
             </Button>
-          </CardActions>
-        </Card>
+          </Paper>
+        ))}
       </Container>
 
       {/* Change Password Dialog */}
@@ -139,16 +148,32 @@ export default function UserPage() {
             fullWidth
           />
           {error && (
-            <Typography color="error" variant="body2">
-              {error}
-            </Typography>
+            <Typography color="error" variant="body2">{error}</Typography>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button variant="contained" onClick={handleSavePassword}>
-            Save
-          </Button>
+          <Button variant="contained" onClick={handleSavePassword}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Task Submission Dialog */}
+      <Dialog open={submissionDialogOpen} onClose={() => setSubmissionDialogOpen(false)}>
+        <DialogTitle>Submit Task: {selectedTask?.title}</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Submission Text / Link"
+            fullWidth
+            multiline
+            minRows={3}
+            value={submissionText}
+            onChange={(e) => setSubmissionText(e.target.value)}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSubmissionDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleSubmitTask}>Submit</Button>
         </DialogActions>
       </Dialog>
     </>
