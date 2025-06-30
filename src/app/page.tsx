@@ -10,23 +10,28 @@ import Typography from "@mui/material/Typography";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
-    // Demo logic: just redirect based on a dummy check
-    if (email === "admin@example.com" && password === "admin") {
-      router.push("/admin");
-    } else if (email && password) {
-      router.push("/user");
-    } else {
-      setError("Invalid credentials");
-    }
-  };
+  // Simulate API delay
+  await new Promise((res) => setTimeout(res, 500));
+
+  if (username === "admin" && password === "admin") {
+    router.push("/admin");
+  } else if (username === "bob@example.com" && password === "user") {
+    router.push("/user");
+  } else {
+  }
+
+  setLoading(false);
+};
 
   return (
     <Container
@@ -42,10 +47,10 @@ export default function LoginPage() {
         style={{ display: "flex", flexDirection: "column", gap: 16 }}
       >
         <TextField
-          label="Email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          label="Username"
+          type="username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
           required
         />
 
