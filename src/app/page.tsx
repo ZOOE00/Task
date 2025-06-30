@@ -25,7 +25,7 @@ const [loading, setLoading] = useState(false);
 
   if (username === "admin" && password === "admin") {
     router.push("/admin");
-  } else if (username === "bob@example.com" && password === "user") {
+  } else if (username === "user" && password === "user") {
     router.push("/user");
   } else {
   }
