@@ -1,122 +1,176 @@
 "use client";
 import React, { useState } from "react";
-import AppBar from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
-import IconButton from "@mui/material/IconButton";
+import {
+  AppBar,
+  Toolbar,
+  IconButton,
+  Typography,
+  Container,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  Box,
+  Menu,
+  MenuItem,
+} from "@mui/material";
 import AccountCircle from "@mui/icons-material/AccountCircle";
-import Typography from "@mui/material/Typography";
-import Container from "@mui/material/Container";
-import Button from "@mui/material/Button";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
-import TextField from "@mui/material/TextField";
-import Box from "@mui/material/Box";
+import { useRouter } from "next/navigation";
 
 export default function AdminPage() {
-  // Users state
+  const router = useRouter();
+
+  // Account Menu
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
+  const handleOpenPasswordDialog = () => {
+    setAnchorEl(null);
+    setPasswordDialogOpen(true);
+  };
+  const handleClosePasswordDialog = () => {
+    setPasswordDialogOpen(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordError("");
+  };
+  const handleChangePassword = () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("Бүх талбарыг бөглөнө үү.");
+    } else if (newPassword !== confirmPassword) {
+      setPasswordError("Нууц үг таарахгүй байна.");
+    } else {
+      alert("Нууц үг амжилттай солигдлоо.");
+      handleClosePasswordDialog();
+    }
+  };
+  const handleLogout = () => {
+    setAnchorEl(null);
+    router.push("/");
+  };
+
+  // Tabs
+  const [currentTab, setCurrentTab] = useState<"users" | "tasks">("users");
+
+  // User Management
   const [users, setUsers] = useState([
-    { id: 1, name: "Alice", email: "alice@example.com", role: "admin" },
-    { id: 2, name: "Bob", email: "bob@example.com", role: "user" },
+    { id: 1, name: "Alice", email: "alice@example.com", role: "admin", position: "Ахлагч", rank: "Дэслэгч" },
+    { id: 2, name: "Bob", email: "bob@example.com", role: "user", position: "Гишүүн", rank: "Ахлагч" },
   ]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newUser, setNewUser] = useState({ name: "", email: "", role: "user" });
+  const [newUser, setNewUser] = useState({ name: "", email: "", role: "user", position: "", rank: "" });
 
-  // Tasks state
+  const handleOpenUserDialog = () => setDialogOpen(true);
+  const handleCloseUserDialog = () => {
+    setDialogOpen(false);
+    setNewUser({ name: "", email: "", role: "user", position: "", rank: "" });
+  };
+  const handleUserChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setNewUser((prev) => ({ ...prev, [field]: e.target.value }));
+  const handleAddUser = () => {
+    const nextId = users.length ? Math.max(...users.map((u) => u.id)) + 1 : 1;
+    setUsers((prev) => [...prev, { id: nextId, ...newUser }]);
+    handleCloseUserDialog();
+  };
+
+  // Task Management
   const [tasks, setTasks] = useState([{ id: 1, title: "Review Budget", userId: 1 }]);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [newTask, setNewTask] = useState({ title: "", userId: "" });
 
-  // Current tab state: 'users' or 'tasks'
-  const [currentTab, setCurrentTab] = useState<"users" | "tasks">("users");
-
-  // Handlers for users
-  const handleOpen = () => setDialogOpen(true);
-  const handleClose = () => {
-    setDialogOpen(false);
-    setNewUser({ name: "", email: "", role: "user" });
-  };
-  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setNewUser((prev) => ({ ...prev, [field]: e.target.value }));
-  const handleAdd = () => {
-    const nextId = users.length ? Math.max(...users.map((u) => u.id)) + 1 : 1;
-    setUsers((prev) => [...prev, { id: nextId, ...newUser }]);
-    handleClose();
-  };
-
-  // Handlers for tasks
-  const handleTaskOpen = () => setTaskDialogOpen(true);
-  const handleTaskClose = () => {
+  const handleOpenTaskDialog = () => setTaskDialogOpen(true);
+  const handleCloseTaskDialog = () => {
     setTaskDialogOpen(false);
     setNewTask({ title: "", userId: "" });
   };
   const handleTaskChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setNewTask((prev) => ({ ...prev, [field]: e.target.value }));
-  const handleTaskAdd = () => {
+  const handleAddTask = () => {
     const nextId = tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1;
     setTasks((prev) => [...prev, { id: nextId, ...newTask, userId: Number(newTask.userId) }]);
-    handleTaskClose();
+    handleCloseTaskDialog();
   };
 
   return (
     <>
-      <AppBar position="static">
+      <AppBar position="static" sx={{ bgcolor: "#1A237E" }}>
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" sx={{ flexGrow: 1, color: "white" }}>
             Admin Dashboard
           </Typography>
-          <IconButton color="inherit">
+          <IconButton color="inherit" onClick={handleMenuOpen}>
             <AccountCircle />
           </IconButton>
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+          >
+            <MenuItem onClick={handleOpenPasswordDialog}>Нууц үг солих</MenuItem>
+            <MenuItem onClick={handleLogout}>Гарах</MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
 
       <Container sx={{ mt: 4 }}>
-        {/* Menu buttons */}
         <Box sx={{ mb: 3, display: "flex", gap: 2 }}>
           <Button
             variant={currentTab === "users" ? "contained" : "outlined"}
             onClick={() => setCurrentTab("users")}
+            color="primary"
           >
-            Users
+            Хэрэглэгчид
           </Button>
           <Button
             variant={currentTab === "tasks" ? "contained" : "outlined"}
             onClick={() => setCurrentTab("tasks")}
+            color="secondary"
           >
-            Tasks
+            Даалгавар
           </Button>
         </Box>
 
-        {/* Conditionally render Users or Tasks content */}
         {currentTab === "users" && (
           <>
-            <Button variant="contained" onClick={handleOpen} sx={{ mb: 2 }}>
-              Add User
+            <Button variant="contained" onClick={handleOpenUserDialog} sx={{ mb: 2 }}>
+              Хэрэглэгч нэмэх
             </Button>
-
-            <TableContainer component={Paper}>
+            <TableContainer component={Paper} elevation={3}>
               <Table>
-                <TableHead>
+                <TableHead sx={{ backgroundColor: "#E8EAF6" }}>
                   <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Name</TableCell>
+                    <TableCell>Д/д</TableCell>
+                    <TableCell>Албан тушаал</TableCell>
+                    <TableCell>Цол</TableCell>
+                    <TableCell>Нэр</TableCell>
                     <TableCell>Email</TableCell>
-                    <TableCell>Role</TableCell>
+                    <TableCell>Эрх</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {users.map((u) => (
-                    <TableRow key={u.id}>
+                    <TableRow key={u.id} hover>
                       <TableCell>{u.id}</TableCell>
+                      <TableCell>{u.position}</TableCell>
+                      <TableCell>{u.rank}</TableCell>
                       <TableCell>{u.name}</TableCell>
                       <TableCell>{u.email}</TableCell>
                       <TableCell>{u.role}</TableCell>
@@ -126,18 +180,19 @@ export default function AdminPage() {
               </Table>
             </TableContainer>
 
-            {/* Add User Dialog */}
-            <Dialog open={dialogOpen} onClose={handleClose}>
-              <DialogTitle>Add New User</DialogTitle>
-              <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, width: 360 }}>
-                <TextField label="Name" value={newUser.name} onChange={handleChange("name")} fullWidth />
-                <TextField label="Email" type="email" value={newUser.email} onChange={handleChange("email")} fullWidth />
-                <TextField label="Role" value={newUser.role} onChange={handleChange("role")} fullWidth />
+            <Dialog open={dialogOpen} onClose={handleCloseUserDialog} fullWidth maxWidth="sm">
+              <DialogTitle>Хэрэглэгч бүртгэх</DialogTitle>
+              <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <TextField label="Албан тушаал" value={newUser.position} onChange={handleUserChange("position")} fullWidth />
+                <TextField label="Цол" value={newUser.rank} onChange={handleUserChange("rank")} fullWidth />
+                <TextField label="Овог, нэр" value={newUser.name} onChange={handleUserChange("name")} fullWidth />
+                <TextField label="Email" type="email" value={newUser.email} onChange={handleUserChange("email")} fullWidth />
+                <TextField label="Эрх" value={newUser.role} onChange={handleUserChange("role")} fullWidth />
               </DialogContent>
               <DialogActions>
-                <Button onClick={handleClose}>Cancel</Button>
-                <Button variant="contained" onClick={handleAdd}>
-                  Save
+                <Button onClick={handleCloseUserDialog}>Болих</Button>
+                <Button variant="contained" onClick={handleAddUser} color="primary">
+                  Хадгалах
                 </Button>
               </DialogActions>
             </Dialog>
@@ -146,27 +201,26 @@ export default function AdminPage() {
 
         {currentTab === "tasks" && (
           <>
-            <Button variant="contained" onClick={handleTaskOpen} sx={{ mb: 2 }}>
-              Assign Task
+            <Button variant="contained" onClick={handleOpenTaskDialog} sx={{ mb: 2 }}>
+              Үүрэг оноох
             </Button>
-
-            <TableContainer component={Paper}>
+            <TableContainer component={Paper} elevation={3}>
               <Table>
-                <TableHead>
+                <TableHead sx={{ backgroundColor: "#FFF8E1" }}>
                   <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Title</TableCell>
-                    <TableCell>Assigned To</TableCell>
+                    <TableCell>Д/д</TableCell>
+                    <TableCell>Гарчиг</TableCell>
+                    <TableCell>Хариуцагч</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {tasks.map((task) => {
                     const user = users.find((u) => u.id === task.userId);
                     return (
-                      <TableRow key={task.id}>
+                      <TableRow key={task.id} hover>
                         <TableCell>{task.id}</TableCell>
                         <TableCell>{task.title}</TableCell>
-                        <TableCell>{user ? user.name : "Unknown"}</TableCell>
+                        <TableCell>{user ? user.name : "Тодорхойгүй"}</TableCell>
                       </TableRow>
                     );
                   })}
@@ -174,25 +228,24 @@ export default function AdminPage() {
               </Table>
             </TableContainer>
 
-            {/* Assign Task Dialog */}
-            <Dialog open={taskDialogOpen} onClose={handleTaskClose}>
-              <DialogTitle>Assign Task</DialogTitle>
-              <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, width: 360 }}>
+            <Dialog open={taskDialogOpen} onClose={handleCloseTaskDialog} fullWidth maxWidth="sm">
+              <DialogTitle>Үүрэг өгөх</DialogTitle>
+              <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <TextField
-                  label="Task Title"
+                  label="Үүргийн гарчиг"
                   value={newTask.title}
                   onChange={handleTaskChange("title")}
                   fullWidth
                 />
                 <TextField
-                  label="Assign To (User)"
+                  label="Хариуцагч"
                   select
                   SelectProps={{ native: true }}
                   value={newTask.userId}
                   onChange={handleTaskChange("userId")}
                   fullWidth
                 >
-                  <option value="">Select user</option>
+                  <option value="">Хэрэглэгч сонгох</option>
                   {users.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.name}
@@ -201,15 +254,54 @@ export default function AdminPage() {
                 </TextField>
               </DialogContent>
               <DialogActions>
-                <Button onClick={handleTaskClose}>Cancel</Button>
-                <Button variant="contained" onClick={handleTaskAdd}>
-                  Assign
+                <Button onClick={handleCloseTaskDialog}>Цуцлах</Button>
+                <Button variant="contained" onClick={handleAddTask}>
+                  Оноох
                 </Button>
               </DialogActions>
             </Dialog>
           </>
         )}
       </Container>
+
+      {/* Change Password Dialog */}
+      <Dialog open={passwordDialogOpen} onClose={handleClosePasswordDialog}>
+        <DialogTitle>Нууц үг солих</DialogTitle>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <TextField
+            label="Одоогийн нууц үг"
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="Шинэ нууц үг"
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="Шинэ нууц үг давтах"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            fullWidth
+          />
+          {passwordError && (
+            <Typography color="error" variant="body2">
+              {passwordError}
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClosePasswordDialog}>Болих</Button>
+          <Button variant="contained" onClick={handleChangePassword}>
+            Хадгалах
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
