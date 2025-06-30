@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   AppBar,
   Toolbar,
@@ -19,286 +20,199 @@ import {
   DialogContent,
   DialogTitle,
   TextField,
-  Box,
-  Menu,
+  FormControl,
+  InputLabel,
+  Select,
   MenuItem,
+  Menu,
 } from "@mui/material";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import { useRouter } from "next/navigation";
 
+interface User {
+  id: number;
+  position: string;
+  rank: string;
+  username: string;
+  password: string;
+  firstname: string;
+  lastname: string;
+  role: "Админ" | "ХХЕГ" | "Хэрэглэгч";
+}
+
 export default function AdminPage() {
   const router = useRouter();
 
-  // Account Menu
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
-  const handleOpenPasswordDialog = () => {
-    setAnchorEl(null);
-    setPasswordDialogOpen(true);
-  };
-  const handleClosePasswordDialog = () => {
-    setPasswordDialogOpen(false);
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setPasswordError("");
-  };
-  const handleChangePassword = () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError("Бүх талбарыг бөглөнө үү.");
-    } else if (newPassword !== confirmPassword) {
-      setPasswordError("Нууц үг таарахгүй байна.");
-    } else {
-      alert("Нууц үг амжилттай солигдлоо.");
-      handleClosePasswordDialog();
-    }
-  };
   const handleLogout = () => {
     setAnchorEl(null);
     router.push("/");
   };
 
-  // Tabs
-  const [currentTab, setCurrentTab] = useState<"users" | "tasks">("users");
+  const api = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_URL,
+    withCredentials: true,
+  });
 
-  // Users
-  const [users, setUsers] = useState([
-    { id: 1, name: "Alice", email: "alice@example.com", role: "admin", position: "Ахлагч", rank: "Дэслэгч" },
-    { id: 2, name: "Bob", email: "bob@example.com", role: "user", position: "Гишүүн", rank: "Ахлагч" },
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newUser, setNewUser] = useState({ name: "", email: "", role: "user", position: "", rank: "" });
+  const [newUser, setNewUser] = useState<Omit<User, 'id'>>({
+    position: "",
+    rank: "",
+    username: "",
+    password: "",
+    firstname: "",
+    lastname: "",
+    role: "Хэрэглэгч",
+  });
 
-  const handleOpenUserDialog = () => setDialogOpen(true);
-  const handleCloseUserDialog = () => {
-    setDialogOpen(false);
-    setNewUser({ name: "", email: "", role: "user", position: "", rank: "" });
-  };
-  const handleUserChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setNewUser((prev) => ({ ...prev, [field]: e.target.value }));
-  const handleAddUser = () => {
-    const nextId = users.length ? Math.max(...users.map((u) => u.id)) + 1 : 1;
-    setUsers((prev) => [...prev, { id: nextId, ...newUser }]);
-    handleCloseUserDialog();
-  };
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await api.get<User[]>("/users/list");
+        setUsers(data);
+      } catch (err: any) {
+        if (err.response?.status === 401) {
+          router.push("/");
+        } else {
+          console.error(err);
+        }
+      }
+    })();
+  }, [router]);
 
-  // Tasks
-  const [tasks, setTasks] = useState([
-    { id: 1, title: "Review Budget", userId: 1, startDate: "2025-07-01", endDate: "2025-07-05" },
-  ]);
-  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
-  const [newTask, setNewTask] = useState({ title: "", userId: "", startDate: "", endDate: "" });
-
-  const handleOpenTaskDialog = () => setTaskDialogOpen(true);
-  const handleCloseTaskDialog = () => {
-    setTaskDialogOpen(false);
-    setNewTask({ title: "", userId: "", startDate: "", endDate: "" });
-  };
-  const handleTaskChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setNewTask((prev) => ({ ...prev, [field]: e.target.value }));
-  const handleAddTask = () => {
-    const nextId = tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1;
-    setTasks((prev) => [
-      ...prev,
-      {
-        id: nextId,
-        title: newTask.title,
-        userId: Number(newTask.userId),
-        startDate: newTask.startDate,
-        endDate: newTask.endDate,
-      },
-    ]);
-    handleCloseTaskDialog();
+  const handleAddUser = async () => {
+    try {
+      await api.post("/users/create", newUser);
+      const { data } = await api.get<User[]>("/users/list");
+      setUsers(data);
+      setDialogOpen(false);
+      setNewUser({ position: "", rank: "", username: "", password: "", firstname: "", lastname: "", role: "Хэрэглэгч" });
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        router.push("/");
+      } else {
+        console.error(err);
+      }
+    }
   };
 
   return (
     <>
-      <AppBar position="static" sx={{ bgcolor: "#1A237E" }}>
+      <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1, color: "white" }}>
-            Admin Dashboard
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            Админ
           </Typography>
           <IconButton color="inherit" onClick={handleMenuOpen}>
             <AccountCircle />
           </IconButton>
           <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-            <MenuItem onClick={handleOpenPasswordDialog}>Нууц үг солих</MenuItem>
             <MenuItem onClick={handleLogout}>Гарах</MenuItem>
           </Menu>
         </Toolbar>
       </AppBar>
 
       <Container sx={{ mt: 4 }}>
-        <Box sx={{ mb: 3, display: "flex", gap: 2 }}>
-          <Button
-            variant={currentTab === "users" ? "contained" : "outlined"}
-            onClick={() => setCurrentTab("users")}
-            color="primary"
-          >
-            Хэрэглэгчид
-          </Button>
-          <Button
-            variant={currentTab === "tasks" ? "contained" : "outlined"}
-            onClick={() => setCurrentTab("tasks")}
-            color="secondary"
-          >
-            Даалгавар
-          </Button>
-        </Box>
+        <Button variant="contained" onClick={() => setDialogOpen(true)} sx={{ mb: 2 }}>
+          Хэрэглэгч нэмэх
+        </Button>
 
-        {currentTab === "users" && (
-          <>
-            <Button variant="contained" onClick={handleOpenUserDialog} sx={{ mb: 2 }}>
-              Хэрэглэгч нэмэх
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Id</TableCell>
+                <TableCell>Албан тушаал</TableCell>
+                <TableCell>Цол</TableCell>
+                <TableCell>Нэвтрэх нэр</TableCell>
+                <TableCell>Нууц үг</TableCell>
+                <TableCell>Нэр</TableCell>
+                <TableCell>Овог</TableCell>
+                <TableCell>Хэрэглэгчийн эрх</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {users.map((u) => (
+                <TableRow key={u.id} hover>
+                  <TableCell>{u.id}</TableCell>
+                  <TableCell>{u.position}</TableCell>
+                  <TableCell>{u.rank}</TableCell>
+                  <TableCell>{u.username}</TableCell>
+                  <TableCell>{u.password}</TableCell>
+                  <TableCell>{u.firstname}</TableCell>
+                  <TableCell>{u.lastname}</TableCell>
+                  <TableCell>{u.role}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Шинэ хэрэглэгч нэмэх</DialogTitle>
+          <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <TextField
+              label="Албан тушаал"
+              value={newUser.position}
+              onChange={(e) => setNewUser((v) => ({ ...v, position: e.target.value }))}
+              fullWidth
+            />
+            <TextField
+              label="Цол"
+              value={newUser.rank}
+              onChange={(e) => setNewUser((v) => ({ ...v, rank: e.target.value }))}
+              fullWidth
+            />
+            <TextField
+              label="Нэвтрэх нэр"
+              value={newUser.username}
+              onChange={(e) => setNewUser((v) => ({ ...v, username: e.target.value }))}
+              fullWidth
+            />
+            <TextField
+              label="Нууц үг"
+              type="Нууц үг"
+              value={newUser.password}
+              onChange={(e) => setNewUser((v) => ({ ...v, password: e.target.value }))}
+              fullWidth
+            />
+            <TextField
+              label="Нэр"
+              value={newUser.firstname}
+              onChange={(e) => setNewUser((v) => ({ ...v, firstname: e.target.value }))}
+              fullWidth
+            />
+            <TextField
+              label="Овог"
+              value={newUser.lastname}
+              onChange={(e) => setNewUser((v) => ({ ...v, lastname: e.target.value }))}
+              fullWidth
+            />
+            <FormControl fullWidth>
+              <InputLabel id="role-select-label">Role</InputLabel>
+              <Select
+                labelId="role-select-label"
+                label="Хэрэглэгчийн эрх"
+                value={newUser.role}
+                onChange={(e) => setNewUser((v) => ({ ...v, role: e.target.value as User['role'] }))}
+              >
+                <MenuItem value="Админ">Админ</MenuItem>
+                <MenuItem value="ХХЕГ">ХХЕГ</MenuItem>
+                <MenuItem value="Хэрэглэгч">Хэрэглэгч</MenuItem>
+              </Select>
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDialogOpen(false)}>Цуцлах</Button>
+            <Button variant="contained" onClick={handleAddUser}>
+              Хадгалах
             </Button>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Д/д</TableCell>
-                    <TableCell>Албан тушаал</TableCell>
-                    <TableCell>Цол</TableCell>
-                    <TableCell>Нэр</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>Эрх</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {users.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell>{u.id}</TableCell>
-                      <TableCell>{u.position}</TableCell>
-                      <TableCell>{u.rank}</TableCell>
-                      <TableCell>{u.name}</TableCell>
-                      <TableCell>{u.email}</TableCell>
-                      <TableCell>{u.role}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            <Dialog open={dialogOpen} onClose={handleCloseUserDialog} fullWidth maxWidth="sm">
-              <DialogTitle>Хэрэглэгч бүртгэх</DialogTitle>
-              <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <TextField label="Албан тушаал" value={newUser.position} onChange={handleUserChange("position")} fullWidth />
-                <TextField label="Цол" value={newUser.rank} onChange={handleUserChange("rank")} fullWidth />
-                <TextField label="Овог, нэр" value={newUser.name} onChange={handleUserChange("name")} fullWidth />
-                <TextField label="Email" type="email" value={newUser.email} onChange={handleUserChange("email")} fullWidth />
-                <TextField label="Эрх" value={newUser.role} onChange={handleUserChange("role")} fullWidth />
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={handleCloseUserDialog}>Болих</Button>
-                <Button variant="contained" onClick={handleAddUser}>Хадгалах</Button>
-              </DialogActions>
-            </Dialog>
-          </>
-        )}
-
-        {currentTab === "tasks" && (
-          <>
-            <Button variant="contained" onClick={handleOpenTaskDialog} sx={{ mb: 2 }}>
-              Үүрэг оноох
-            </Button>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Д/д</TableCell>
-                    <TableCell>Гарчиг</TableCell>
-                    <TableCell>Хариуцагч</TableCell>
-                    <TableCell>Эхлэх</TableCell>
-                    <TableCell>Дуусах</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {tasks.map((task) => {
-                    const user = users.find((u) => u.id === task.userId);
-                    return (
-                      <TableRow key={task.id}>
-                        <TableCell>{task.id}</TableCell>
-                        <TableCell>{task.title}</TableCell>
-                        <TableCell>{user ? user.name : "Тодорхойгүй"}</TableCell>
-                        <TableCell>{task.startDate}</TableCell>
-                        <TableCell>{task.endDate}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            <Dialog open={taskDialogOpen} onClose={handleCloseTaskDialog} fullWidth maxWidth="sm">
-              <DialogTitle>Үүрэг өгөх</DialogTitle>
-              <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <TextField
-                  label="Үүргийн гарчиг"
-                  value={newTask.title}
-                  onChange={handleTaskChange("title")}
-                  fullWidth
-                />
-                <TextField
-                  label="Хариуцагч"
-                  select
-                  SelectProps={{ native: true }}
-                  value={newTask.userId}
-                  onChange={handleTaskChange("userId")}
-                  fullWidth
-                >
-                  <option value="">Хэрэглэгч сонгох</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </TextField>
-                <TextField
-                  label="Эхлэх огноо"
-                  type="date"
-                  value={newTask.startDate}
-                  onChange={handleTaskChange("startDate")}
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
-                />
-                <TextField
-                  label="Дуусах огноо"
-                  type="date"
-                  value={newTask.endDate}
-                  onChange={handleTaskChange("endDate")}
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
-                />
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={handleCloseTaskDialog}>Цуцлах</Button>
-                <Button variant="contained" onClick={handleAddTask}>Оноох</Button>
-              </DialogActions>
-            </Dialog>
-          </>
-        )}
+          </DialogActions>
+        </Dialog>
       </Container>
-
-      {/* Password Dialog */}
-      <Dialog open={passwordDialogOpen} onClose={handleClosePasswordDialog}>
-        <DialogTitle>Нууц үг солих</DialogTitle>
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <TextField label="Одоогийн нууц үг" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} fullWidth />
-          <TextField label="Шинэ нууц үг" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} fullWidth />
-          <TextField label="Шинэ нууц үг давтах" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} fullWidth />
-          {passwordError && <Typography color="error">{passwordError}</Typography>}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClosePasswordDialog}>Болих</Button>
-          <Button variant="contained" onClick={handleChangePassword}>Хадгалах</Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 }

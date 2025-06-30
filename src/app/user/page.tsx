@@ -1,83 +1,84 @@
 "use client";
 import React, { useState } from "react";
 import {
-  AppBar, Toolbar, IconButton, Typography, Container,
-  Card, CardContent, CardActions, Button, Dialog, DialogTitle,
-  DialogContent, DialogActions, TextField, Menu, MenuItem, Box, Paper
+  AppBar,
+  Toolbar,
+  IconButton,
+  Typography,
+  Container,
+  Paper,
+  Button,
+  TextField,
+  Menu,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Box,
 } from "@mui/material";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import { useRouter } from "next/navigation";
+import ChangePasswordDialog from "@/components/changePassword";
+
+interface Task {
+  id: number;
+  title: string;
+  userId: number;
+  startDate: string;
+  endDate: string;
+}
 
 export default function UserPage() {
   const router = useRouter();
-
   const user = { id: 2, name: "Bob", email: "bob@example.com", role: "user" };
 
-  const tasks = [
+  const tasks: Task[] = [
     { id: 1, title: "Report Writing", userId: 2, startDate: "2025-06-25", endDate: "2025-06-30" },
     { id: 2, title: "Security Check", userId: 1, startDate: "2025-06-26", endDate: "2025-06-28" },
     { id: 3, title: "System Audit", userId: 2, startDate: "2025-06-27", endDate: "2025-07-01" },
   ];
 
+  // Account menu
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
+  const openMenu = Boolean(anchorEl);
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
-
-  const handleOpenChangePassword = () => {
-    handleMenuClose();
-    setDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setDialogOpen(false);
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setError("");
-  };
-
-  const handleSavePassword = () => {
-    setError("");
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setError("Please fill all fields.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-    alert("Password changed!");
-    handleCloseDialog();
-  };
-
   const handleLogout = () => {
     handleMenuClose();
     router.push("/");
   };
 
+  // Change Password dialog
+  const [changePwdOpen, setChangePwdOpen] = useState(false);
+  const openChangePwd = () => {
+    handleMenuClose();
+    setChangePwdOpen(true);
+  };
+
   // Task submission
   const [submissionDialogOpen, setSubmissionDialogOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [submissionText, setSubmissionText] = useState("");
-  const [submissions, setSubmissions] = useState<{ [taskId: number]: string }>({});
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [submissions, setSubmissions] = useState<Record<number, { text: string; file?: File }>>({});
 
-  const handleOpenSubmission = (task: any) => {
+  const handleOpenSubmission = (task: Task) => {
     setSelectedTask(task);
-    setSubmissionText(submissions[task.id] || "");
+    setSubmissionText(submissions[task.id]?.text || "");
+    setUploadedFile(submissions[task.id]?.file || null);
     setSubmissionDialogOpen(true);
   };
 
   const handleSubmitTask = () => {
-    setSubmissions((prev) => ({ ...prev, [selectedTask.id]: submissionText }));
-    setSubmissionDialogOpen(false);
-    alert("Submitted!");
+    if (selectedTask) {
+      setSubmissions(prev => ({
+        ...prev,
+        [selectedTask.id]: { text: submissionText, file: uploadedFile || undefined },
+      }));
+      setSubmissionDialogOpen(false);
+      alert("Submitted!");
+    }
   };
 
   return (
@@ -92,30 +93,40 @@ export default function UserPage() {
           </IconButton>
           <Menu
             anchorEl={anchorEl}
-            open={open}
+            open={openMenu}
             onClose={handleMenuClose}
             anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
             transformOrigin={{ vertical: "top", horizontal: "right" }}
           >
-            <MenuItem onClick={handleOpenChangePassword}>Change Password</MenuItem>
+            <MenuItem onClick={openChangePwd}>Change Password</MenuItem>
             <MenuItem onClick={handleLogout}>Logout</MenuItem>
           </Menu>
         </Toolbar>
       </AppBar>
 
       <Container sx={{ mt: 4 }}>
-        
-        {/* Task List */}
-        <Typography variant="h6" gutterBottom>Assigned Tasks</Typography>
+        <Typography variant="h6" gutterBottom>
+          Assigned Tasks
+        </Typography>
+
         {tasks.filter(t => t.userId === user.id).map(task => (
           <Paper key={task.id} sx={{ mb: 2, p: 2 }}>
             <Typography variant="subtitle1">{task.title}</Typography>
             <Typography variant="body2">Start: {task.startDate}</Typography>
             <Typography variant="body2">End: {task.endDate}</Typography>
             <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
-              Submission: {submissions[task.id] || "Not submitted"}
+              Submission: {submissions[task.id]?.text || "Not submitted"}
             </Typography>
-            <Button sx={{ mt: 1 }} variant="outlined" onClick={() => handleOpenSubmission(task)}>
+            {submissions[task.id]?.file && (
+              <Box sx={{ mt: 1 }}>
+                <Typography variant="caption">File: {submissions[task.id]!.file!.name}</Typography>
+              </Box>
+            )}
+            <Button
+              sx={{ mt: 1 }}
+              variant="outlined"
+              onClick={() => handleOpenSubmission(task)}
+            >
               {submissions[task.id] ? "Edit Submission" : "Submit Task"}
             </Button>
           </Paper>
@@ -123,53 +134,29 @@ export default function UserPage() {
       </Container>
 
       {/* Change Password Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog}>
-        <DialogTitle>Change Password</DialogTitle>
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, width: 360 }}>
-          <TextField
-            label="Current Password"
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="New Password"
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="Confirm New Password"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            fullWidth
-          />
-          {error && (
-            <Typography color="error" variant="body2">{error}</Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button variant="contained" onClick={handleSavePassword}>Save</Button>
-        </DialogActions>
-      </Dialog>
+      <ChangePasswordDialog open={changePwdOpen} onClose={() => setChangePwdOpen(false)} />
 
       {/* Task Submission Dialog */}
-      <Dialog open={submissionDialogOpen} onClose={() => setSubmissionDialogOpen(false)}>
+      <Dialog open={submissionDialogOpen} onClose={() => setSubmissionDialogOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Submit Task: {selectedTask?.title}</DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <TextField
             label="Submission Text / Link"
             fullWidth
             multiline
             minRows={3}
             value={submissionText}
-            onChange={(e) => setSubmissionText(e.target.value)}
-            sx={{ mt: 1 }}
+            onChange={e => setSubmissionText(e.target.value)}
           />
+          <Button variant="outlined" component="label">
+            {uploadedFile ? "Change File" : "Upload File"}
+            <input
+              type="file"
+              hidden
+              onChange={e => setUploadedFile(e.target.files?.[0] || null)}
+            />
+          </Button>
+          {uploadedFile && <Typography variant="caption">Selected: {uploadedFile.name}</Typography>}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSubmissionDialogOpen(false)}>Cancel</Button>
