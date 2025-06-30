@@ -1,22 +1,21 @@
-// File: src/app/ThemeRegistry.tsx
-'use client';
+// File: src/app/layout.tsx (Server Component)
 
-import * as React from 'react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
+import type { Metadata } from 'next';
+import ThemeRegistry from './ThemeRegistry';
 
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: { main: '#1976d2' },
-  },
-});
+export const metadata: Metadata = {
+  title: 'My App',
+  description: 'Using MUI with Next.js App Router',
+};
 
-export default function ThemeRegistry({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      {children}
-    </ThemeProvider>
+    <html lang="en">
+      <body>
+        <ThemeRegistry>
+          {children}
+        </ThemeRegistry>
+      </body>
+    </html>
   );
 }
