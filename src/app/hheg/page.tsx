@@ -31,7 +31,7 @@ export default function KHEGPage() {
     const fetchUsers = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/list`, {
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/list-role`, {
   headers: { Authorization: `Bearer ${token}` },
 });
 
