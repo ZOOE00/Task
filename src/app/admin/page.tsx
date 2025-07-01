@@ -1,4 +1,3 @@
-// File: src/app/admin/page.tsx
 "use client";
 import React, { useState, useEffect } from "react";
 import {
@@ -45,23 +44,19 @@ interface User {
 
 export default function AdminPage() {
   const router = useRouter();
-
-  // Account menu
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) =>
+    setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     router.push("/login");
   };
 
-  // Users state
   const [users, setUsers] = useState<User[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-
-  // Form state for new user
   const [newUser, setNewUser] = useState<Omit<User, "id">>({
     position: "",
     rank: "",
@@ -71,8 +66,6 @@ export default function AdminPage() {
     lastname: "",
     role: 3,
   });
-
-  // Fetch all users
   const fetchUsers = async () => {
     try {
       const { data } = await api.get<User[]>("/users/list");
@@ -89,7 +82,6 @@ export default function AdminPage() {
     fetchUsers();
   }, [router]);
 
-  // Add user
   const handleAddUser = async () => {
     try {
       await api.post("/users/create", newUser);
@@ -109,22 +101,24 @@ export default function AdminPage() {
     }
   };
 
-  // Preload user into edit form
-  const handleEditClick = async (username: string) => {
-    try {
-      const { data } = await api.get<User>(`/users/${username}`);
-      setSelectedUser(data);
-      setEditDialogOpen(true);
-    } catch (err: any) {
-      console.error("Хэрэглэгчийн мэдээлэл авах үед алдаа:", err.response?.data || err);
-    }
-  };
+ const handleEditClick = async (id: number) => {
+  try {
+    console.log("Fetching user by id:", id);
+    const { data } = await api.get<User>(`/users/list/${id}`);
+    setSelectedUser(data);
+    setEditDialogOpen(true);
+  } catch (err: any) {
+    console.error(
+      "Хэрэглэгчийн мэдээлэл авах үед алдаа:",
+      err.response?.data || err
+    );
+  }
+};
 
-  // Save edited user
   const handleSaveEdit = async () => {
     if (!selectedUser) return;
     try {
-      await api.put(`/update/${selectedUser.username}`, selectedUser);
+      await api.put(`users/update/${selectedUser.id}`, selectedUser);
       await fetchUsers();
       setEditDialogOpen(false);
       setSelectedUser(null);
@@ -150,34 +144,39 @@ export default function AdminPage() {
       </AppBar>
 
       <Container sx={{ mt: 4 }}>
-        {/* Add User Button */}
-        <Button variant="contained" onClick={() => setDialogOpen(true)} sx={{ mb: 2 }}>
+        <Button
+          variant="contained"
+          onClick={() => setDialogOpen(true)}
+          sx={{ mb: 2 }}
+        >
           Хэрэглэгч нэмэх
         </Button>
-
-        {/* Users Table */}
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Id</TableCell>
+                <TableCell>ID</TableCell>
                 <TableCell>Засах</TableCell>
                 <TableCell>Албан тушаал</TableCell>
                 <TableCell>Цол</TableCell>
-                <TableCell>Овог</TableCell>
                 <TableCell>Нэр</TableCell>
+                <TableCell>Овог</TableCell>
                 <TableCell>Нэвтрэх нэр</TableCell>
                 <TableCell>Нууц үг</TableCell>
-                <TableCell>Хэрэглэгчийн эрх</TableCell>
+                <TableCell>Эрх</TableCell>
               </TableRow>
             </TableHead>
+
             <TableBody>
               {users.map((u) => (
                 <TableRow key={u.id}>
                   <TableCell>{u.id}</TableCell>
                   <TableCell>
                     <Tooltip title="Засах">
-                      <IconButton onClick={() => handleEditClick(u.username)} size="small">
+                      <IconButton
+                        onClick={() => handleEditClick(u.id)}
+                        size="small"
+                      >
                         <EditIcon />
                       </IconButton>
                     </Tooltip>
@@ -189,53 +188,74 @@ export default function AdminPage() {
                   <TableCell>{u.username}</TableCell>
                   <TableCell>{u.password}</TableCell>
                   <TableCell>
-                    {u.role === 1 ? "Админ" : u.role === 2 ? "ХХЕГ" : "Хэрэглэгч"}
+                    {u.role === 1
+                      ? "Админ"
+                      : u.role === 2
+                      ? "ХХЕГ"
+                      : "Хэрэглэгч"}
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </TableContainer>
-
-        {/* Add User Dialog */}
-        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">
+        <Dialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          fullWidth
+          maxWidth="sm"
+        >
           <DialogTitle>Шинэ хэрэглэгч нэмэх</DialogTitle>
-          <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <DialogContent
+            sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+          >
             <TextField
               label="Албан тушаал"
               value={newUser.position}
-              onChange={(e) => setNewUser((v) => ({ ...v, position: e.target.value }))}
+              onChange={(e) =>
+                setNewUser((v) => ({ ...v, position: e.target.value }))
+              }
               fullWidth
             />
             <TextField
               label="Цол"
               value={newUser.rank}
-              onChange={(e) => setNewUser((v) => ({ ...v, rank: e.target.value }))}
+              onChange={(e) =>
+                setNewUser((v) => ({ ...v, rank: e.target.value }))
+              }
               fullWidth
             />
             <TextField
               label="Нэвтрэх нэр"
               value={newUser.username}
-              onChange={(e) => setNewUser((v) => ({ ...v, username: e.target.value }))}
+              onChange={(e) =>
+                setNewUser((v) => ({ ...v, username: e.target.value }))
+              }
               fullWidth
             />
             <TextField
               label="Нууц үг"
               type="password"
               value={newUser.password}
-              onChange={(e) => setNewUser((v) => ({ ...v, password: e.target.value }))}
+              onChange={(e) =>
+                setNewUser((v) => ({ ...v, password: e.target.value }))
+              }
               fullWidth
             />
             <TextField
               label="Нэр"
               value={newUser.firstname}
-              onChange={(e) => setNewUser((v) => ({ ...v, firstname: e.target.value }))}
+              onChange={(e) =>
+                setNewUser((v) => ({ ...v, firstname: e.target.value }))
+              }
               fullWidth
             />
             <TextField
               label="Овог"
               value={newUser.lastname}
-              onChange={(e) => setNewUser((v) => ({ ...v, lastname: e.target.value }))}
+              onChange={(e) =>
+                setNewUser((v) => ({ ...v, lastname: e.target.value }))
+              }
               fullWidth
             />
             <FormControl fullWidth>
@@ -243,7 +263,9 @@ export default function AdminPage() {
               <Select
                 value={newUser.role}
                 label="Хэрэглэгчийн эрх"
-                onChange={(e) => setNewUser((v) => ({ ...v, role: Number(e.target.value) }))}
+                onChange={(e) =>
+                  setNewUser((v) => ({ ...v, role: Number(e.target.value) }))
+                }
               >
                 <MenuItem value={1}>Админ</MenuItem>
                 <MenuItem value={2}>ХХЕГ</MenuItem>
@@ -253,19 +275,28 @@ export default function AdminPage() {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setDialogOpen(false)}>Цуцлах</Button>
-            <Button variant="contained" onClick={handleAddUser}>Хадгалах</Button>
+            <Button variant="contained" onClick={handleAddUser}>
+              Хадгалах
+            </Button>
           </DialogActions>
         </Dialog>
-
-        {/* Edit User Dialog */}
-        <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} fullWidth maxWidth="sm">
+        <Dialog
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          fullWidth
+          maxWidth="sm"
+        >
           <DialogTitle>Хэрэглэгч засах</DialogTitle>
-          <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <DialogContent
+            sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+          >
             <TextField
               label="Албан тушаал"
               value={selectedUser?.position || ""}
               onChange={(e) =>
-                setSelectedUser((prev) => prev ? { ...prev, position: e.target.value } : null)
+                setSelectedUser((prev) =>
+                  prev ? { ...prev, position: e.target.value } : null
+                )
               }
               fullWidth
             />
@@ -273,7 +304,9 @@ export default function AdminPage() {
               label="Цол"
               value={selectedUser?.rank || ""}
               onChange={(e) =>
-                setSelectedUser((prev) => prev ? { ...prev, rank: e.target.value } : null)
+                setSelectedUser((prev) =>
+                  prev ? { ...prev, rank: e.target.value } : null
+                )
               }
               fullWidth
             />
@@ -281,7 +314,9 @@ export default function AdminPage() {
               label="Нэвтрэх нэр"
               value={selectedUser?.username || ""}
               onChange={(e) =>
-                setSelectedUser((prev) => prev ? { ...prev, username: e.target.value } : null)
+                setSelectedUser((prev) =>
+                  prev ? { ...prev, username: e.target.value } : null
+                )
               }
               fullWidth
             />
@@ -289,7 +324,9 @@ export default function AdminPage() {
               label="Нэр"
               value={selectedUser?.firstname || ""}
               onChange={(e) =>
-                setSelectedUser((prev) => prev ? { ...prev, firstname: e.target.value } : null)
+                setSelectedUser((prev) =>
+                  prev ? { ...prev, firstname: e.target.value } : null
+                )
               }
               fullWidth
             />
@@ -297,7 +334,9 @@ export default function AdminPage() {
               label="Овог"
               value={selectedUser?.lastname || ""}
               onChange={(e) =>
-                setSelectedUser((prev) => prev ? { ...prev, lastname: e.target.value } : null)
+                setSelectedUser((prev) =>
+                  prev ? { ...prev, lastname: e.target.value } : null
+                )
               }
               fullWidth
             />
@@ -307,7 +346,9 @@ export default function AdminPage() {
                 value={selectedUser?.role || 3}
                 label="Хэрэглэгчийн эрх"
                 onChange={(e) =>
-                  setSelectedUser((prev) => prev ? { ...prev, role: Number(e.target.value) } : null)
+                  setSelectedUser((prev) =>
+                    prev ? { ...prev, role: Number(e.target.value) } : null
+                  )
                 }
               >
                 <MenuItem value={1}>Админ</MenuItem>
@@ -318,7 +359,9 @@ export default function AdminPage() {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setEditDialogOpen(false)}>Болих</Button>
-            <Button variant="contained" onClick={handleSaveEdit}>Хадгалах</Button>
+            <Button variant="contained" onClick={handleSaveEdit}>
+              Хадгалах
+            </Button>
           </DialogActions>
         </Dialog>
       </Container>
