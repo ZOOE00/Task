@@ -47,6 +47,7 @@ export default function UserPage() {
   const [submissionText, setSubmissionText] = useState("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [submissions, setSubmissions] = useState<Record<number, { text: string; file?: File }>>({});
+  const openMenu = Boolean(anchorEl);
   useEffect(() => {
     const fetchUserAndTasks = async () => {
       try {
