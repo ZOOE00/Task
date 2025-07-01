@@ -46,8 +46,7 @@ export default function UserPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [submissionText, setSubmissionText] = useState("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const openMenu = Boolean(anchorEl);
-
+  const [submissions, setSubmissions] = useState<Record<number, { text: string; file?: File }>>({});
   useEffect(() => {
     const fetchUserAndTasks = async () => {
       try {
@@ -138,7 +137,8 @@ export default function UserPage() {
             anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
             transformOrigin={{ vertical: "top", horizontal: "right" }}
           >
-            <MenuItem onClick={handleLogout}>Гарах</MenuItem>
+            <MenuItem onClick={openChangePwd}>Нууц үг солих</MenuItem>
+            <MenuItem onClick={handleLogout}>Программаас гарах</MenuItem>
           </Menu>
         </Toolbar>
       </AppBar>

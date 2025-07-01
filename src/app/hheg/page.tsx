@@ -182,7 +182,7 @@ export default function KHEGPage() {
             <AccountCircle />
           </IconButton>
           <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={handleMenuClose}>
-            <MenuItem onClick={handleLogout}>Гарах</MenuItem>
+            <MenuItem onClick={handleLogout}>Программаас гарах</MenuItem>
           </Menu>
         </Toolbar>
       </AppBar>
