@@ -6,6 +6,12 @@ import Container from "@mui/material/Container";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
+import {jwtDecode} from "jwt-decode";
+
+interface DecodedToken {
+  user_id: number;
+  // add other fields if needed, like username etc
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,22 +26,62 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      // 1. Login request, get token
       const { data } = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/login/auth`,
         { username, password }
       );
 
-      if (data.token) {
-        localStorage.setItem("authToken", data.token);
+      const token = data.token;
 
-        const role = data.role || "Хэрэглэгч";
-        localStorage.setItem("role", role);
-
-        if (role === 1) router.push("/admin");
-        else if (role === 2) router.push("/ххег");
-        else router.push("/user");
-      } else {
+      if (!token) {
         setError("Token ирсэнгүй. Серверийг шалгана уу.");
+        setLoading(false);
+        return;
+      }
+
+      localStorage.setItem("authToken", token);
+
+      // 2. Decode token to get user id
+      const decoded = jwtDecode<DecodedToken>(token);
+
+      if (!decoded.user_id) {
+        setError("Token-д хэрэглэгчийн ID байхгүй байна.");
+        setLoading(false);
+        return;
+      }
+
+      // 3. Fetch all users with token
+      const usersResponse = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/list`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const users = usersResponse.data;
+
+      // 4. Find current user by id
+      const currentUser = users.find((u: any) => u.id === decoded.user_id);
+
+      if (!currentUser || !currentUser.role) {
+        setError("Хэрэглэгчийн мэдээлэл эсвэл эрх олдсонгүй.");
+        setLoading(false);
+        return;
+      }
+
+      const roleNum = Number(currentUser.role);
+      localStorage.setItem("role", String(roleNum));
+
+      // 5. Redirect based on role
+      if (roleNum === 1) {
+        router.push("/admin");
+      } else if (roleNum === 2) {
+        router.push("/hheg");
+      } else if (roleNum === 3) {
+        router.push("/user");
+      } else {
+        setError("Тодорхойгүй хэрэглэгчийн эрх.");
       }
     } catch (err: any) {
       setError(
@@ -75,7 +121,7 @@ export default function LoginPage() {
         />
         {error && <Typography color="error">{error}</Typography>}
         <Button type="submit" variant="contained" disabled={loading}>
-          {loading ? "Signing in..." : "Нэвтрэх"}
+          {loading ? "Нэвтэрч байна..." : "Нэвтрэх"}
         </Button>
       </form>
     </Container>

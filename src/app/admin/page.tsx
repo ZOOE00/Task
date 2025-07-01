@@ -71,14 +71,14 @@ export default function AdminPage() {
       const { data } = await api.get<User[]>("/users/list");
       setUsers(data);
     } catch (err: any) {
-      if (err.response?.status === 401) router.push("/login");
+      if (err.response?.status === 401) router.push("/");
       else console.error("Алдаа:", err);
     }
   };
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
-    if (!token) return router.push("/login");
+    if (!token) return router.push("/");
     fetchUsers();
   }, [router]);
 

@@ -116,7 +116,6 @@ export default function UserPage() {
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            User Dashboard
           </Typography>
           <IconButton color="inherit" onClick={handleMenuOpen}>
             <AccountCircle />
