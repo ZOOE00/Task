@@ -19,7 +19,6 @@ import {
 } from "@mui/material";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import { useRouter } from "next/navigation";
-import ChangePasswordDialog from "@/components/changePassword";
 
 interface Task {
   id: number;
@@ -132,9 +131,6 @@ export default function UserPage() {
           </Paper>
         ))}
       </Container>
-
-      {/* Change Password Dialog */}
-      <ChangePasswordDialog open={changePwdOpen} onClose={() => setChangePwdOpen(false)} />
 
       {/* Task Submission Dialog */}
       <Dialog open={submissionDialogOpen} onClose={() => setSubmissionDialogOpen(false)} fullWidth maxWidth="sm">

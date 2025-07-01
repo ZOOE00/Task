@@ -1,4 +1,3 @@
-// app/page.tsx
 "use client";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -26,34 +25,57 @@ export default function LoginPage() {
         { username, password }
       );
 
-      if (data.success) {
-        // persist token & role
+      if (data.token) {
         localStorage.setItem("authToken", data.token);
-        localStorage.setItem("role", data.role);
 
-        // route by role
-        if (data.role === "admin") router.push("/admin");
-        else if (data.role === "ХХЕГ") router.push("/ххег");
+        const role = data.role || "Хэрэглэгч";
+        localStorage.setItem("role", role);
+
+        if (role === "admin") router.push("/admin");
+        else if (role === "ХХЕГ") router.push("/ххег");
         else router.push("/user");
       } else {
-        setError(data.message || "Нэвтрэхэд алдаа гарлаа");
+        setError("Token ирсэнгүй. Серверийг шалгана уу.");
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Сервертэй холбогдоход алдаа гарлаа");
+      setError(
+        err.response?.data?.message || "Сервертэй холбогдоход алдаа гарлаа"
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Container maxWidth="xs" sx={{ mt: 8, display: "flex", flexDirection: "column", gap: 2 }}>
-      <Typography variant="h5" align="center">Login</Typography>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <TextField label="Username" value={username} onChange={e => setUsername(e.target.value)} required disabled={loading} />
-        <TextField label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required disabled={loading} />
+    <Container
+      maxWidth="xs"
+      sx={{ mt: 8, display: "flex", flexDirection: "column", gap: 2 }}
+    >
+      <Typography variant="h5" align="center">
+        Нэвтрэх хэсэг
+      </Typography>
+      <form
+        onSubmit={handleSubmit}
+        style={{ display: "flex", flexDirection: "column", gap: 16 }}
+      >
+        <TextField
+          label="Нэвтрэх нэр"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+          disabled={loading}
+        />
+        <TextField
+          label="Нууц үг"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          disabled={loading}
+        />
         {error && <Typography color="error">{error}</Typography>}
         <Button type="submit" variant="contained" disabled={loading}>
-          {loading ? "Signing in..." : "Sign In"}
+          {loading ? "Signing in..." : "Нэвтрэх"}
         </Button>
       </form>
     </Container>
