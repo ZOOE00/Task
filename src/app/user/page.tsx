@@ -31,7 +31,7 @@ interface User {
 interface Task {
   id: number;
   title: string;
-  description?: string;
+  descrip: string;
   userId: number;
   startDate: string;
   endDate: string;
@@ -44,29 +44,21 @@ export default function UserPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const openMenu = Boolean(anchorEl);
-  const [changePwdOpen, setChangePwdOpen] = useState(false);
   const [submissionDialogOpen, setSubmissionDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [submissionText, setSubmissionText] = useState("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [submissions, setSubmissions] = useState<Record<number, { text: string; file?: File }>>({});
+
   useEffect(() => {
     const fetchUserAndTasks = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("authToken");
+        const id = localStorage.getItem("id");
         if (!token) return;
 
-        const userRes = await axios.get<User>(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const userData = userRes.data;
-        setUser(userData);
-
         const taskRes = await axios.get<Task[]>(
-          `${process.env.NEXT_PUBLIC_API_URL}/users/list/${userData.id}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/task/list-to`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -83,12 +75,8 @@ export default function UserPage() {
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("authToken");
     router.push("/");
-  };
-  const openChangePwd = () => {
-    handleMenuClose();
-    setChangePwdOpen(true);
   };
 
   const handleOpenSubmission = (task: Task) => {
@@ -99,14 +87,46 @@ export default function UserPage() {
     setSubmissionDialogOpen(true);
   };
 
-  const handleSubmitTask = () => {
-    if (!selectedTask) return;
-    setSubmissions(prev => ({
-      ...prev,
-      [selectedTask.id]: { text: submissionText, file: uploadedFile || undefined },
-    }));
-    setSubmissionDialogOpen(false);
-    alert("Submitted!");
+  const handleSubmitTask = async () => {
+    if (!selectedTask || !user) return;
+
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      alert("Not authenticated.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("taskId", selectedTask.id.toString());
+    formData.append("userId", user.id.toString());
+    formData.append("text", submissionText);
+    if (uploadedFile) {
+      formData.append("file", uploadedFile);
+    }
+
+    try {
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/submissions`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      setSubmissions((prev) => ({
+        ...prev,
+        [selectedTask.id]: { text: submissionText, file: uploadedFile || undefined },
+      }));
+
+      setSubmissionDialogOpen(false);
+      alert("Submission successful!");
+    } catch (error) {
+      console.error("Submission failed:", error);
+      alert("Failed to submit task.");
+    }
   };
 
   return (
@@ -114,6 +134,7 @@ export default function UserPage() {
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            My Tasks
           </Typography>
           <IconButton color="inherit" onClick={handleMenuOpen}>
             <AccountCircle />
@@ -125,8 +146,7 @@ export default function UserPage() {
             anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
             transformOrigin={{ vertical: "top", horizontal: "right" }}
           >
-            <MenuItem onClick={openChangePwd}>Нууц үг солих</MenuItem>
-            <MenuItem onClick={handleLogout}>Программаас гарах</MenuItem>
+            <MenuItem onClick={handleLogout}>Log out</MenuItem>
           </Menu>
         </Toolbar>
       </AppBar>
@@ -137,9 +157,9 @@ export default function UserPage() {
         </Typography>
 
         {tasks.map((task) => (
-          <Paper key={task.id} sx={{ mb: 2, p: 2 }}>
+          <Paper  sx={{ mb: 2, p: 2 }}>
             <Typography variant="subtitle1">{task.title}</Typography>
-            {task.description && <Typography variant="body2">{task.description}</Typography>}
+            {task.descrip && <Typography variant="body2">{task.descrip}</Typography>}
             <Typography variant="body2">Start: {task.startDate}</Typography>
             <Typography variant="body2">End: {task.endDate}</Typography>
             <Typography variant="body2" sx={{ mt: 1, fontStyle: "italic" }}>
@@ -163,7 +183,7 @@ export default function UserPage() {
         ))}
       </Container>
 
-      {/* Task Submission Dialog */}
+      {/* Submission Dialog */}
       <Dialog
         open={submissionDialogOpen}
         onClose={() => setSubmissionDialogOpen(false)}
@@ -194,7 +214,9 @@ export default function UserPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSubmissionDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmitTask}>Submit</Button>
+          <Button variant="contained" onClick={handleSubmitTask}>
+            Submit
+          </Button>
         </DialogActions>
       </Dialog>
     </>

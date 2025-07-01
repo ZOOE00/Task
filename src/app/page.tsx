@@ -39,6 +39,7 @@ export default function LoginPage() {
       }
 
       localStorage.setItem("authToken", token);
+      localStorage.setItem("id", String(data.user_id));
 
       const decoded = jwtDecode<DecodedToken>(token);
 
