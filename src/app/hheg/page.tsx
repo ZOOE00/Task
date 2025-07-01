@@ -27,6 +27,7 @@ import {
   Select,
   MenuItem,
   Menu,
+  SelectChangeEvent,
 } from "@mui/material";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import { useRouter } from "next/navigation";
@@ -35,13 +36,12 @@ interface User {
   id: number;
   firstname: string;
   lastname: string;
-  // whatever other fields come back, e.g. role…
 }
 
 interface TaskForm {
   title: string;
   description: string;
-  userId: number;
+  userId: string;
   startDate: string;
   endDate: string;
 }
@@ -56,45 +56,43 @@ export default function KHEGPage() {
     router.push("/");
   };
 
-  // --- users & tasks state ---
   const [users, setUsers] = useState<User[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<(TaskForm & { id: number })[]>([]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newTask, setNewTask] = useState<TaskForm>({
     title: "",
     description: "",
-    userId: 0,
+    userId: "0",
     startDate: "",
     endDate: "",
   });
 
-  // --- fetch users by role from your API ---
   useEffect(() => {
-    const fetchUsers = async () => {
+    async function fetchUsers() {
       try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get(
+        const token = localStorage.getItem("authToken");
+        const res = await axios.get<User[]>(
           `${process.env.NEXT_PUBLIC_API_URL}/users/list-role`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setUsers(res.data);
-      } catch (error) {
-        console.error("Failed to fetch users", error);
+        setUsers(res.data || []);
+      } catch (err) {
+        console.error("Failed to fetch users", err);
       }
-    };
+    }
     fetchUsers();
   }, []);
 
-  // --- add task locally (or POST to your backend) ---
   const handleAddTask = () => {
-    const id = tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1;
-    setTasks([
-      ...tasks,
-      { id, ...newTask },
-    ]);
+    const nextId = tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1;
+    setTasks([...tasks, { id: nextId, ...newTask }]);
     setDialogOpen(false);
-    setNewTask({ title: "", description: "", userId: 0, startDate: "", endDate: "" });
+    setNewTask({ title: "", description: "", userId: "0", startDate: "", endDate: "" });
+  };
+
+  const handleUserChange = (e: SelectChangeEvent<string>) => {
+    setNewTask((v) => ({ ...v, userId: e.target.value }));
   };
 
   return (
@@ -132,7 +130,7 @@ export default function KHEGPage() {
             </TableHead>
             <TableBody>
               {tasks.map((t) => {
-                const user = users.find((u) => u.id === t.userId);
+                const user = users.find((u) => u.id === Number(t.userId));
                 return (
                   <TableRow key={t.id}>
                     <TableCell>{t.id}</TableCell>
@@ -171,16 +169,11 @@ export default function KHEGPage() {
                 labelId="user-select-label"
                 value={newTask.userId}
                 label="Албан тушаалтан"
-                onChange={(e) =>
-                  setNewTask((v) => ({ ...v, userId: Number(e.target.value) }))
-                }
-                inputProps={{ name: "userId" }}
+                onChange={handleUserChange}
               >
-                <MenuItem value={0} disabled>
-                  Сонгох
-                </MenuItem>
+                <MenuItem value="0" disabled>Сонгох</MenuItem>
                 {users.map((u) => (
-                  <MenuItem key={u.id} value={u.id}>
+                  <MenuItem key={u.id} value={u.id.toString()}>
                     {u.firstname} {u.lastname}
                   </MenuItem>
                 ))}
@@ -205,9 +198,7 @@ export default function KHEGPage() {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setDialogOpen(false)}>Цуцлах</Button>
-            <Button variant="contained" onClick={handleAddTask}>
-              Хадгалах
-            </Button>
+            <Button variant="contained" onClick={handleAddTask}>Хадгалах</Button>
           </DialogActions>
         </Dialog>
       </Container>

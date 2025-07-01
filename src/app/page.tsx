@@ -31,8 +31,8 @@ export default function LoginPage() {
         const role = data.role || "Хэрэглэгч";
         localStorage.setItem("role", role);
 
-        if (role === "admin") router.push("/admin");
-        else if (role === "ХХЕГ") router.push("/ххег");
+        if (role === 1) router.push("/admin");
+        else if (role === 2) router.push("/ххег");
         else router.push("/user");
       } else {
         setError("Token ирсэнгүй. Серверийг шалгана уу.");

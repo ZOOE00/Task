@@ -52,7 +52,7 @@ export default function AdminPage() {
   const handleMenuClose = () => setAnchorEl(null);
   const handleLogout = () => {
     localStorage.removeItem("authToken");
-    router.push("/login");
+    router.push("/");
   };
 
   // Users state

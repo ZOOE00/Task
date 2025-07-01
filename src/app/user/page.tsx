@@ -1,5 +1,7 @@
 "use client";
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   AppBar,
   Toolbar,
@@ -20,9 +22,16 @@ import {
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import { useRouter } from "next/navigation";
 
+interface User {
+  id: number;
+  firstname: string;
+  lastname: string;
+}
+
 interface Task {
   id: number;
   title: string;
+  description?: string;
   userId: number;
   startDate: string;
   endDate: string;
@@ -30,54 +39,76 @@ interface Task {
 
 export default function UserPage() {
   const router = useRouter();
-  const user = { id: 2, name: "Bob", email: "bob@example.com", role: "user" };
 
-  const tasks: Task[] = [
-    { id: 1, title: "Report Writing", userId: 2, startDate: "2025-06-25", endDate: "2025-06-30" },
-    { id: 2, title: "Security Check", userId: 1, startDate: "2025-06-26", endDate: "2025-06-28" },
-    { id: 3, title: "System Audit", userId: 2, startDate: "2025-06-27", endDate: "2025-07-01" },
-  ];
-
-  // Account menu
+  const [user, setUser] = useState<User | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const openMenu = Boolean(anchorEl);
-  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
-  const handleMenuClose = () => setAnchorEl(null);
-  const handleLogout = () => {
-    handleMenuClose();
-    router.push("/");
-  };
-
-  // Change Password dialog
   const [changePwdOpen, setChangePwdOpen] = useState(false);
-  const openChangePwd = () => {
-    handleMenuClose();
-    setChangePwdOpen(true);
-  };
-
-  // Task submission
   const [submissionDialogOpen, setSubmissionDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [submissionText, setSubmissionText] = useState("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [submissions, setSubmissions] = useState<Record<number, { text: string; file?: File }>>({});
 
+  // Fetch user and tasks
+  useEffect(() => {
+    const fetchUserAndTasks = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const userRes = await axios.get<User>(
+          `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const userData = userRes.data;
+        setUser(userData);
+
+        const taskRes = await axios.get<Task[]>(
+          `${process.env.NEXT_PUBLIC_API_URL}/users/list/${userData.id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setTasks(taskRes.data || []);
+      } catch (err) {
+        console.error("Failed to fetch user or tasks", err);
+      }
+    };
+
+    fetchUserAndTasks();
+  }, []);
+
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    router.push("/");
+  };
+  const openChangePwd = () => {
+    handleMenuClose();
+    setChangePwdOpen(true);
+  };
+
   const handleOpenSubmission = (task: Task) => {
     setSelectedTask(task);
-    setSubmissionText(submissions[task.id]?.text || "");
-    setUploadedFile(submissions[task.id]?.file || null);
+    const prev = submissions[task.id];
+    setSubmissionText(prev?.text || "");
+    setUploadedFile(prev?.file || null);
     setSubmissionDialogOpen(true);
   };
 
   const handleSubmitTask = () => {
-    if (selectedTask) {
-      setSubmissions(prev => ({
-        ...prev,
-        [selectedTask.id]: { text: submissionText, file: uploadedFile || undefined },
-      }));
-      setSubmissionDialogOpen(false);
-      alert("Submitted!");
-    }
+    if (!selectedTask) return;
+    setSubmissions(prev => ({
+      ...prev,
+      [selectedTask.id]: { text: submissionText, file: uploadedFile || undefined },
+    }));
+    setSubmissionDialogOpen(false);
+    alert("Submitted!");
   };
 
   return (
@@ -108,17 +139,20 @@ export default function UserPage() {
           Assigned Tasks
         </Typography>
 
-        {tasks.filter(t => t.userId === user.id).map(task => (
+        {tasks.map((task) => (
           <Paper key={task.id} sx={{ mb: 2, p: 2 }}>
             <Typography variant="subtitle1">{task.title}</Typography>
+            {task.description && <Typography variant="body2">{task.description}</Typography>}
             <Typography variant="body2">Start: {task.startDate}</Typography>
             <Typography variant="body2">End: {task.endDate}</Typography>
-            <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+            <Typography variant="body2" sx={{ mt: 1, fontStyle: "italic" }}>
               Submission: {submissions[task.id]?.text || "Not submitted"}
             </Typography>
             {submissions[task.id]?.file && (
               <Box sx={{ mt: 1 }}>
-                <Typography variant="caption">File: {submissions[task.id]!.file!.name}</Typography>
+                <Typography variant="caption">
+                  File: {submissions[task.id]!.file!.name}
+                </Typography>
               </Box>
             )}
             <Button
@@ -133,7 +167,12 @@ export default function UserPage() {
       </Container>
 
       {/* Task Submission Dialog */}
-      <Dialog open={submissionDialogOpen} onClose={() => setSubmissionDialogOpen(false)} fullWidth maxWidth="sm">
+      <Dialog
+        open={submissionDialogOpen}
+        onClose={() => setSubmissionDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle>Submit Task: {selectedTask?.title}</DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <TextField
@@ -142,17 +181,19 @@ export default function UserPage() {
             multiline
             minRows={3}
             value={submissionText}
-            onChange={e => setSubmissionText(e.target.value)}
+            onChange={(e) => setSubmissionText(e.target.value)}
           />
           <Button variant="outlined" component="label">
             {uploadedFile ? "Change File" : "Upload File"}
             <input
               type="file"
               hidden
-              onChange={e => setUploadedFile(e.target.files?.[0] || null)}
+              onChange={(e) => setUploadedFile(e.target.files?.[0] ?? null)}
             />
           </Button>
-          {uploadedFile && <Typography variant="caption">Selected: {uploadedFile.name}</Typography>}
+          {uploadedFile && (
+            <Typography variant="caption">Selected: {uploadedFile.name}</Typography>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSubmissionDialogOpen(false)}>Cancel</Button>
