@@ -25,6 +25,7 @@ import {
   MenuItem,
   Menu,
   Tooltip,
+  Box,
 } from "@mui/material";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import EditIcon from "@mui/icons-material/Edit";
@@ -66,19 +67,25 @@ export default function AdminPage() {
     lastname: "",
     role: 3,
   });
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredUsers = users.filter((u) =>
+    u.firstname.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const fetchUsers = async () => {
     try {
       const { data } = await api.get<User[]>("/users/list");
       setUsers(data);
     } catch (err: any) {
-      if (err.response?.status === 401) router.push("/");
+      if (err.response?.status === 401) router.push("/login");
       else console.error("Алдаа:", err);
     }
   };
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
-    if (!token) return router.push("/");
+    if (!token) return router.push("/login");
     fetchUsers();
   }, [router]);
 
@@ -101,19 +108,18 @@ export default function AdminPage() {
     }
   };
 
- const handleEditClick = async (id: number) => {
-  try {
-    console.log("Fetching user by id:", id);
-    const { data } = await api.get<User>(`/users/list/${id}`);
-    setSelectedUser(data);
-    setEditDialogOpen(true);
-  } catch (err: any) {
-    console.error(
-      "Хэрэглэгчийн мэдээлэл авах үед алдаа:",
-      err.response?.data || err
-    );
-  }
-};
+  const handleEditClick = async (id: number) => {
+    try {
+      const { data } = await api.get<User>(`/users/list/${id}`);
+      setSelectedUser(data);
+      setEditDialogOpen(true);
+    } catch (err: any) {
+      console.error(
+        "Хэрэглэгчийн мэдээлэл авах үед алдаа:",
+        err.response?.data || err
+      );
+    }
+  };
 
   const handleSaveEdit = async () => {
     if (!selectedUser) return;
@@ -144,13 +150,23 @@ export default function AdminPage() {
       </AppBar>
 
       <Container sx={{ mt: 4 }}>
-        <Button
-          variant="contained"
-          onClick={() => setDialogOpen(true)}
-          sx={{ mb: 2 }}
-        >
-          Хэрэглэгч нэмэх
-        </Button>
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+          <Button variant="contained" onClick={() => setDialogOpen(true)}>
+            Хэрэглэгч нэмэх
+          </Button>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <TextField
+              label="Нэрээр хайх"
+              size="small"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <Button variant="outlined" onClick={() => setSearchTerm("")}>
+              Цэвэрлэх
+            </Button>
+          </Box>
+        </Box>
+
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
@@ -166,9 +182,8 @@ export default function AdminPage() {
                 <TableCell>Эрх</TableCell>
               </TableRow>
             </TableHead>
-
             <TableBody>
-              {users.map((u) => (
+              {filteredUsers.map((u) => (
                 <TableRow key={u.id}>
                   <TableCell>{u.id}</TableCell>
                   <TableCell>
