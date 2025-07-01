@@ -10,7 +10,6 @@ import {jwtDecode} from "jwt-decode";
 
 interface DecodedToken {
   user_id: number;
-  // add other fields if needed, like username etc
 }
 
 export default function LoginPage() {
@@ -26,7 +25,6 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // 1. Login request, get token
       const { data } = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/login/auth`,
         { username, password }
@@ -42,7 +40,6 @@ export default function LoginPage() {
 
       localStorage.setItem("authToken", token);
 
-      // 2. Decode token to get user id
       const decoded = jwtDecode<DecodedToken>(token);
 
       if (!decoded.user_id) {
@@ -51,7 +48,6 @@ export default function LoginPage() {
         return;
       }
 
-      // 3. Fetch all users with token
       const usersResponse = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/users/list`,
         {
@@ -61,7 +57,6 @@ export default function LoginPage() {
 
       const users = usersResponse.data;
 
-      // 4. Find current user by id
       const currentUser = users.find((u: any) => u.id === decoded.user_id);
 
       if (!currentUser || !currentUser.role) {
@@ -73,7 +68,6 @@ export default function LoginPage() {
       const roleNum = Number(currentUser.role);
       localStorage.setItem("role", String(roleNum));
 
-      // 5. Redirect based on role
       if (roleNum === 1) {
         router.push("/admin");
       } else if (roleNum === 2) {

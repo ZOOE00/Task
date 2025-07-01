@@ -40,10 +40,15 @@ interface User {
 
 interface TaskForm {
   title: string;
-  description: string;
-  userId: string;
+  descrip: string;
+  created_to: number;
   startDate: string;
   endDate: string;
+}
+
+interface Task extends TaskForm {
+  id: number;
+  status: boolean;
 }
 
 export default function KHEGPage() {
@@ -53,17 +58,17 @@ export default function KHEGPage() {
     setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("authToken");
     router.push("/");
   };
 
   const [users, setUsers] = useState<User[]>([]);
-  const [tasks, setTasks] = useState<(TaskForm & { id: number })[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newTask, setNewTask] = useState<TaskForm>({
     title: "",
-    description: "",
-    userId: "0",
+    descrip: "",
+    created_to: 0,
     startDate: "",
     endDate: "",
   });
@@ -77,31 +82,85 @@ export default function KHEGPage() {
         const token = localStorage.getItem("authToken");
         const res = await axios.get<User[]>(
           `${process.env.NEXT_PUBLIC_API_URL}/users/list-role`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
-        setUsers(res.data || []);
+        console.log("User list response:", res.data);
+        if (Array.isArray(res.data)) {
+          setUsers(res.data);
+        } else {
+          console.error("Unexpected user list format:", res.data);
+          alert("Алдаатай хэрэглэгчийн мэдээлэл ирлээ.");
+        }
       } catch (err) {
         console.error("Failed to fetch users", err);
+        alert("Хэрэглэгчийн жагсаалт татаж чадсангүй.");
       }
     }
+
+    async function fetchTasks() {
+      try {
+        const token = localStorage.getItem("authToken");
+        const res = await axios.get<Task[]>(
+          `${process.env.NEXT_PUBLIC_API_URL}/task/list`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setTasks(res.data || []);
+      } catch (err) {
+        console.error("Failed to fetch tasks", err);
+        alert("Үүргүүдийг татахад алдаа гарлаа.");
+      }
+    }
+
     fetchUsers();
+    fetchTasks();
   }, []);
 
-  const handleAddTask = () => {
-    const nextId = tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1;
-    setTasks([...tasks, { id: nextId, ...newTask }]);
-    setDialogOpen(false);
-    setNewTask({
-      title: "",
-      description: "",
-      userId: "0",
-      startDate: "",
-      endDate: "",
-    });
+  const handleAddTask = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        alert("Токен олдсонгүй. Нэвтэрч орно уу.");
+        return;
+      }
+
+      const response = await axios.post<Task>(
+        `${process.env.NEXT_PUBLIC_API_URL}/task/create`,
+        {
+          title: newTask.title,
+          descrip: newTask.descrip,
+          created_to: +newTask.created_to,
+        //   start_date: newTask.startDate,
+        //   end_date: newTask.endDate,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setTasks((prev) => [...prev, response.data]);
+      setDialogOpen(false);
+      setNewTask({
+        title: "",
+        descrip: "",
+        created_to: 0,
+        startDate: "",
+        endDate: "",
+      });
+      console.log("Үүрэг амжилттай нэмэгдлээ:", newTask);
+    } catch (err) {
+      console.error("Үүрэг нэмэхэд алдаа гарлаа:", err);
+      alert("Үүрэг нэмэхэд алдаа гарлаа");
+    }
   };
 
   const handleUserChange = (e: SelectChangeEvent<string>) => {
-    setNewTask((v) => ({ ...v, userId: e.target.value }));
+    setNewTask((v) => ({ ...v, created_to: Number(e.target.value) }));
   };
 
   const filteredTasks = tasks.filter((task) => {
@@ -123,7 +182,7 @@ export default function KHEGPage() {
             <AccountCircle />
           </IconButton>
           <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={handleMenuClose}>
-            <MenuItem onClick={handleLogout}>Logout</MenuItem>
+            <MenuItem onClick={handleLogout}>Гарах</MenuItem>
           </Menu>
         </Toolbar>
       </AppBar>
@@ -154,9 +213,7 @@ export default function KHEGPage() {
             onChange={(e) => setFilterEnd(e.target.value)}
             size="small"
           />
-          <Button variant="outlined" onClick={() => {}}>
-            Хайх
-          </Button>
+          <Button variant="outlined">Хайх</Button>
         </Box>
 
         <Button
@@ -181,12 +238,12 @@ export default function KHEGPage() {
             </TableHead>
             <TableBody>
               {filteredTasks.map((t) => {
-                const user = users.find((u) => u.id === Number(t.userId));
+                const user = users.find((u) => u.id === t.created_to);
                 return (
                   <TableRow key={t.id}>
                     <TableCell>{t.id}</TableCell>
                     <TableCell>{t.title}</TableCell>
-                    <TableCell>{t.description}</TableCell>
+                    <TableCell>{t.descrip}</TableCell>
                     <TableCell>
                       {user ? `${user.firstname} ${user.lastname}` : "Unknown"}
                     </TableCell>
@@ -219,19 +276,19 @@ export default function KHEGPage() {
             />
             <TextField
               label="Тайлбар"
-              value={newTask.description}
+              value={newTask.descrip}
               onChange={(e) =>
-                setNewTask((v) => ({ ...v, description: e.target.value }))
+                setNewTask((v) => ({ ...v, descrip: e.target.value }))
               }
               fullWidth
               multiline
-              rows={6}
+              rows={4}
             />
             <FormControl fullWidth>
               <InputLabel id="user-select-label">Албан тушаалтан</InputLabel>
               <Select
                 labelId="user-select-label"
-                value={newTask.userId}
+                value={newTask.created_to.toString()}
                 label="Албан тушаалтан"
                 onChange={handleUserChange}
               >
@@ -245,7 +302,7 @@ export default function KHEGPage() {
                 ))}
               </Select>
             </FormControl>
-            <TextField
+            {/* <TextField
               label="Эхлэх огноо"
               type="date"
               InputLabelProps={{ shrink: true }}
@@ -264,7 +321,7 @@ export default function KHEGPage() {
                 setNewTask((v) => ({ ...v, endDate: e.target.value }))
               }
               fullWidth
-            />
+            /> */}
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setDialogOpen(false)}>Цуцлах</Button>
