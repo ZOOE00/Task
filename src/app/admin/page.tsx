@@ -321,6 +321,16 @@ export default function AdminPage() {
               fullWidth
             />
             <TextField
+              label="Нууц үг"
+              value={selectedUser?.password || ""}
+              onChange={(e) =>
+                setSelectedUser((prev) =>
+                  prev ? { ...prev, password: e.target.value } : null
+                )
+              }
+              fullWidth
+            />
+            <TextField
               label="Нэр"
               value={selectedUser?.firstname || ""}
               onChange={(e) =>

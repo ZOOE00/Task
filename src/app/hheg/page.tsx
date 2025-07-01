@@ -1,4 +1,3 @@
-// File: src/app/kheg/page.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -27,6 +26,7 @@ import {
   Select,
   MenuItem,
   Menu,
+  Box,
   SelectChangeEvent,
 } from "@mui/material";
 import AccountCircle from "@mui/icons-material/AccountCircle";
@@ -49,7 +49,8 @@ interface TaskForm {
 export default function KHEGPage() {
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) =>
+    setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -58,7 +59,6 @@ export default function KHEGPage() {
 
   const [users, setUsers] = useState<User[]>([]);
   const [tasks, setTasks] = useState<(TaskForm & { id: number })[]>([]);
-
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newTask, setNewTask] = useState<TaskForm>({
     title: "",
@@ -67,6 +67,9 @@ export default function KHEGPage() {
     startDate: "",
     endDate: "",
   });
+
+  const [filterStart, setFilterStart] = useState("");
+  const [filterEnd, setFilterEnd] = useState("");
 
   useEffect(() => {
     async function fetchUsers() {
@@ -88,12 +91,26 @@ export default function KHEGPage() {
     const nextId = tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1;
     setTasks([...tasks, { id: nextId, ...newTask }]);
     setDialogOpen(false);
-    setNewTask({ title: "", description: "", userId: "0", startDate: "", endDate: "" });
+    setNewTask({
+      title: "",
+      description: "",
+      userId: "0",
+      startDate: "",
+      endDate: "",
+    });
   };
 
   const handleUserChange = (e: SelectChangeEvent<string>) => {
     setNewTask((v) => ({ ...v, userId: e.target.value }));
   };
+
+  const filteredTasks = tasks.filter((task) => {
+    if (!filterStart || !filterEnd) return true;
+    const taskStart = new Date(task.startDate).getTime();
+    const start = new Date(filterStart).getTime();
+    const end = new Date(filterEnd).getTime();
+    return taskStart >= start && taskStart <= end;
+  });
 
   return (
     <>
@@ -112,7 +129,41 @@ export default function KHEGPage() {
       </AppBar>
 
       <Container sx={{ mt: 4 }}>
-        <Button variant="contained" onClick={() => setDialogOpen(true)} sx={{ mb: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            gap: 2,
+            mb: 2,
+          }}
+        >
+          <TextField
+            label="Эхлэх огноо"
+            type="date"
+            InputLabelProps={{ shrink: true }}
+            value={filterStart}
+            onChange={(e) => setFilterStart(e.target.value)}
+            size="small"
+          />
+          <TextField
+            label="Дуусах огноо"
+            type="date"
+            InputLabelProps={{ shrink: true }}
+            value={filterEnd}
+            onChange={(e) => setFilterEnd(e.target.value)}
+            size="small"
+          />
+          <Button variant="outlined" onClick={() => {}}>
+            Хайх
+          </Button>
+        </Box>
+
+        <Button
+          variant="contained"
+          onClick={() => setDialogOpen(true)}
+          sx={{ mb: 2 }}
+        >
           Үүрэг нэмэх
         </Button>
 
@@ -129,7 +180,7 @@ export default function KHEGPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {tasks.map((t) => {
+              {filteredTasks.map((t) => {
                 const user = users.find((u) => u.id === Number(t.userId));
                 return (
                   <TableRow key={t.id}>
@@ -148,20 +199,33 @@ export default function KHEGPage() {
           </Table>
         </TableContainer>
 
-        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">
+        <Dialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          fullWidth
+          maxWidth="sm"
+        >
           <DialogTitle>Үүрэг нэмэх</DialogTitle>
-          <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <DialogContent
+            sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+          >
             <TextField
               label="Гарчиг"
               value={newTask.title}
-              onChange={(e) => setNewTask((v) => ({ ...v, title: e.target.value }))}
+              onChange={(e) =>
+                setNewTask((v) => ({ ...v, title: e.target.value }))
+              }
               fullWidth
             />
             <TextField
               label="Тайлбар"
               value={newTask.description}
-              onChange={(e) => setNewTask((v) => ({ ...v, description: e.target.value }))}
+              onChange={(e) =>
+                setNewTask((v) => ({ ...v, description: e.target.value }))
+              }
               fullWidth
+              multiline
+              rows={6}
             />
             <FormControl fullWidth>
               <InputLabel id="user-select-label">Албан тушаалтан</InputLabel>
@@ -171,7 +235,9 @@ export default function KHEGPage() {
                 label="Албан тушаалтан"
                 onChange={handleUserChange}
               >
-                <MenuItem value="0" disabled>Сонгох</MenuItem>
+                <MenuItem value="0" disabled>
+                  Сонгох
+                </MenuItem>
                 {users.map((u) => (
                   <MenuItem key={u.id} value={u.id.toString()}>
                     {u.firstname} {u.lastname}
@@ -184,7 +250,9 @@ export default function KHEGPage() {
               type="date"
               InputLabelProps={{ shrink: true }}
               value={newTask.startDate}
-              onChange={(e) => setNewTask((v) => ({ ...v, startDate: e.target.value }))}
+              onChange={(e) =>
+                setNewTask((v) => ({ ...v, startDate: e.target.value }))
+              }
               fullWidth
             />
             <TextField
@@ -192,13 +260,17 @@ export default function KHEGPage() {
               type="date"
               InputLabelProps={{ shrink: true }}
               value={newTask.endDate}
-              onChange={(e) => setNewTask((v) => ({ ...v, endDate: e.target.value }))}
+              onChange={(e) =>
+                setNewTask((v) => ({ ...v, endDate: e.target.value }))
+              }
               fullWidth
             />
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setDialogOpen(false)}>Цуцлах</Button>
-            <Button variant="contained" onClick={handleAddTask}>Хадгалах</Button>
+            <Button variant="contained" onClick={handleAddTask}>
+              Хадгалах
+            </Button>
           </DialogActions>
         </Dialog>
       </Container>
