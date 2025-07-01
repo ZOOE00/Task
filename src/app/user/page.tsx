@@ -157,7 +157,7 @@ export default function UserPage() {
         </Typography>
 
         {tasks.map((task) => (
-          <Paper  sx={{ mb: 2, p: 2 }}>
+          <Paper key={task.id} sx={{ mb: 2, p: 2 }}>
             <Typography variant="subtitle1">{task.title}</Typography>
             {task.descrip && <Typography variant="body2">{task.descrip}</Typography>}
             <Typography variant="body2">Start: {task.startDate}</Typography>
